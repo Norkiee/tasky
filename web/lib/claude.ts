@@ -90,31 +90,21 @@ export async function generateTasksForFrame(
     .replace('{storyTitle}', storyTitle || 'Not specified')
     .replace('{storyDescription}', storyDescription || 'Not specified');
 
-  const content: Array<{ type: 'image'; source: { type: 'base64'; media_type: 'image/png'; data: string } } | { type: 'text'; text: string }> = [];
-
-  if (frame.imageBase64) {
-    content.push({
-      type: 'image',
-      source: {
-        type: 'base64',
-        media_type: 'image/png',
-        data: frame.imageBase64,
-      },
-    });
-  }
-
-  content.push({
-    type: 'text',
-    text: `${prompt}\n\nFrame: ${frame.id} — "${frame.name}"`,
-  });
+  // Build a text description of the frame
+  const frameDescription = [
+    `Frame: "${frame.name}" (${frame.width || 0}x${frame.height || 0})`,
+    frame.textContent?.length ? `Text content: ${frame.textContent.join(', ')}` : null,
+    frame.componentNames?.length ? `Components: ${frame.componentNames.join(', ')}` : null,
+    frame.nestedFrameNames?.length ? `Child frames: ${frame.nestedFrameNames.join(', ')}` : null,
+  ].filter(Boolean).join('\n');
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 2048,
     messages: [
       {
         role: 'user',
-        content,
+        content: `${prompt}\n\n${frameDescription}`,
       },
     ],
   });
@@ -122,7 +112,6 @@ export async function generateTasksForFrame(
   const text = response.content[0].type === 'text' ? response.content[0].text : '';
   const parsed = JSON.parse(stripMarkdownFences(text));
 
-  // Ensure source_frame_id is set on each task
   return (parsed.tasks || []).map((task: TaskInput) => ({
     ...task,
     source_frame_id: frame.id,

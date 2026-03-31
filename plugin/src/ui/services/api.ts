@@ -190,7 +190,11 @@ export async function generateWorkItems(
       frames: frames.map(f => ({
         id: f.id,
         name: f.name,
-        imageBase64: f.imageBase64,
+        textContent: f.textContent,
+        componentNames: f.componentNames,
+        nestedFrameNames: f.nestedFrameNames,
+        width: f.width,
+        height: f.height,
       })),
       context,
       storyTitle,

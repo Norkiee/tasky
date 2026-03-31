@@ -85,7 +85,12 @@ export interface TaskInput {
 export interface FrameData {
   id: string;
   name: string;
-  imageBase64: string;
+  imageBase64?: string;
+  textContent?: string[];
+  componentNames?: string[];
+  nestedFrameNames?: string[];
+  width?: number;
+  height?: number;
 }
 
 export interface GenerateTasksRequest {
