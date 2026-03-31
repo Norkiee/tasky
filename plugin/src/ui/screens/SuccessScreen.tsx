@@ -75,7 +75,7 @@ export function SuccessScreen({
 
       <div className="screen-footer" style={styles.buttons}>
         <Button onClick={() => window.open('https://taskscribe.xyz/dashboard', '_blank')} fullWidth>
-          View on Tasky
+          View on TaskScribe
         </Button>
         <Button onClick={onGoHome} variant="secondary" fullWidth>
           Done

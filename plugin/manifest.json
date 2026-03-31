@@ -1,5 +1,5 @@
 {
-  "name": "Tasky",
+  "name": "TaskScribe",
   "id": "tasky-figma-plugin",
   "api": "1.0.0",
   "main": "dist/main.js",
@@ -7,6 +7,6 @@
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["*"],
-    "reasoning": "Connects to Vercel backend API and Azure DevOps OAuth endpoints"
+    "reasoning": "Connects to TaskScribe backend API for authentication and task generation"
   }
 }

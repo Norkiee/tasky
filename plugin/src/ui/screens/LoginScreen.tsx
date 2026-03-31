@@ -94,7 +94,7 @@ export function LoginScreen({ onLogin, onBack }: LoginScreenProps): React.ReactE
         ) : (
           <>
             <p style={{ fontSize: '13px', color: '#A1A1A1', maxWidth: '260px', lineHeight: '1.5' }}>
-              Sign in through your browser to connect the plugin to your Tasky account.
+              Sign in through your browser to connect the plugin to your TaskScribe account.
             </p>
             {error && <p style={{ fontSize: '12px', color: '#EF4444' }}>{error}</p>}
             <Button onClick={handleSignIn} fullWidth>
