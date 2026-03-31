@@ -25,8 +25,9 @@ export async function POST(request: NextRequest) {
     });
 
   if (error) {
+    console.error('plugin auth store error:', error);
     return NextResponse.json(
-      { error: 'Failed to store auth code' },
+      { error: 'Failed to store auth code', details: error.message },
       { status: 500 }
     );
   }

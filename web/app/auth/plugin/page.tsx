@@ -64,7 +64,8 @@ function PluginLoginContent() {
         if (res.ok) {
           setDone(true)
         } else {
-          setError('Failed to connect to plugin. Please try again.')
+          const data = await res.json().catch(() => ({}))
+          setError(`Failed to connect to plugin: ${data.details || data.error || res.status}`)
         }
       } catch {
         setError('Failed to connect to plugin. Please try again.')
