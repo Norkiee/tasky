@@ -87,10 +87,12 @@ export function App(): React.ReactElement {
           frames,
           context,
           selection?.story.title,
-          selection?.story.description || undefined
+          selection?.story.description || undefined,
+          (frameId) => {
+            setCompletedFrameIds((prev) => new Set([...prev, frameId]));
+          }
         );
         setFrameWorkItems(generated);
-        setCompletedFrameIds(new Set(generated.map((fwi) => fwi.frameId)));
         setScreen('review');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Generation failed');

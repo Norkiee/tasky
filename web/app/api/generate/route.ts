@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { generateTasksForFrame } from '@/lib/claude';
-import { GenerateTasksRequest, TaskInput } from '@/lib/types';
-
-export const maxDuration = 60;
+import { TaskInput } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser(request);
@@ -11,23 +9,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body: GenerateTasksRequest = await request.json();
-  const { frames, context, storyTitle, storyDescription } = body;
+  const body = await request.json();
+  const { frame, context, storyTitle, storyDescription } = body;
 
-  if (!frames || !Array.isArray(frames) || frames.length === 0) {
-    return NextResponse.json({ error: 'frames array is required' }, { status: 400 });
+  if (!frame || !frame.id || !frame.name) {
+    return NextResponse.json({ error: 'frame object with id and name is required' }, { status: 400 });
   }
 
   try {
-    const allTasks: TaskInput[] = [];
-
-    // Process frames one at a time to avoid timeout/size limits
-    for (const frame of frames) {
-      const tasks = await generateTasksForFrame(frame, context, storyTitle, storyDescription);
-      allTasks.push(...tasks);
-    }
-
-    return NextResponse.json({ tasks: allTasks });
+    const tasks: TaskInput[] = await generateTasksForFrame(frame, context, storyTitle, storyDescription);
+    return NextResponse.json({ tasks });
   } catch (error) {
     console.error('Generate error:', error);
     return NextResponse.json(

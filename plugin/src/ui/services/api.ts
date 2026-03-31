@@ -152,82 +152,63 @@ export async function saveTasks(
   });
 }
 
-// Generate tasks from Figma frames
-export interface GenerateRequest {
-  frames: {
-    id: string;
-    name: string;
-    imageBase64: string;
-  }[];
-  context?: string;
-  storyTitle?: string;
-  storyDescription?: string;
-}
-
-export async function generateTasks(
+// Generate tasks for a single frame
+async function generateTasksForFrame(
   token: string,
-  payload: GenerateRequest
-): Promise<{ tasks: TaskInput[] }> {
-  return request('/api/generate', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  });
-}
-
-// Legacy support - convert to new format
-export async function generateWorkItems(
-  token: string,
-  frames: FrameData[],
+  frame: FrameData,
   context?: string,
   storyTitle?: string,
   storyDescription?: string
-): Promise<{ frameWorkItems: FrameWorkItems[] }> {
+): Promise<TaskInput[]> {
   const result = await request<{ tasks: TaskInput[] }>('/api/generate', {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({
-      frames: frames.map(f => ({
-        id: f.id,
-        name: f.name,
-        textContent: f.textContent,
-        componentNames: f.componentNames,
-        nestedFrameNames: f.nestedFrameNames,
-        width: f.width,
-        height: f.height,
-      })),
+      frame: {
+        id: frame.id,
+        name: frame.name,
+        textContent: frame.textContent,
+        componentNames: frame.componentNames,
+        nestedFrameNames: frame.nestedFrameNames,
+        width: frame.width,
+        height: frame.height,
+      },
       context,
       storyTitle,
       storyDescription,
     }),
   });
+  return result.tasks;
+}
 
-  // Group tasks by their source frame
-  const frameMap = new Map<string, FrameWorkItems>();
+// Generate work items for all frames, one at a time, with progress callback
+export async function generateWorkItems(
+  token: string,
+  frames: FrameData[],
+  context?: string,
+  storyTitle?: string,
+  storyDescription?: string,
+  onFrameComplete?: (frameId: string) => void
+): Promise<{ frameWorkItems: FrameWorkItems[] }> {
+  const frameWorkItemsList: FrameWorkItems[] = [];
 
   for (const frame of frames) {
-    frameMap.set(frame.id, {
+    const tasks = await generateTasksForFrame(token, frame, context, storyTitle, storyDescription);
+
+    frameWorkItemsList.push({
       frameId: frame.id,
       frameName: frame.name,
       sectionName: frame.sectionName,
-      workItems: [],
-    });
-  }
-
-  for (const task of result.tasks) {
-    const frameId = task.source_frame_id || frames[0]?.id;
-    const frameWorkItems = frameMap.get(frameId);
-    if (frameWorkItems) {
-      frameWorkItems.workItems.push({
+      workItems: tasks.map(task => ({
         id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         title: task.title,
         description: task.description,
         selected: true,
-      });
-    }
+      })),
+    });
+
+    onFrameComplete?.(frame.id);
   }
 
-  return {
-    frameWorkItems: Array.from(frameMap.values()),
-  };
+  return { frameWorkItems: frameWorkItemsList };
 }
