@@ -10,8 +10,8 @@ const style: React.CSSProperties = {
   borderRadius: '16px',
   fontSize: '12px',
   fontWeight: 500,
-  background: '#f0f0f0',
-  color: '#888888',
+  background: 'rgba(255, 255, 255, 0.05)',
+  color: '#A1A1A1',
 };
 
 export function FrameChip({ name }: FrameChipProps): React.ReactElement {

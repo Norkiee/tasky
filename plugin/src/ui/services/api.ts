@@ -1,26 +1,8 @@
-import {
-  FrameData,
-  FrameTasks,
-  FrameWorkItems,
-  AzureProject,
-  AzureStory,
-  AzureWorkItemDetails,
-  CreateTaskResult,
-  CreateUserStoryResult,
-  CreateEpicResult,
-  CreateFeatureResult,
-  TaskToSubmit,
-  UserStoryToSubmit,
-  EpicToSubmit,
-  FeatureToSubmit,
-  WorkItemType,
-  WorkItemTypeInfo,
-  HierarchyContext,
-} from '../types';
+import { FrameData, FrameWorkItems } from '../types';
 
-const API_URL = 'https://devops-psi.vercel.app';
+declare const VITE_API_URL: string | undefined;
+const API_URL = (typeof VITE_API_URL !== 'undefined' ? VITE_API_URL : null) || 'http://localhost:3000';
 
-// Custom error class for authentication failures
 export class AuthError extends Error {
   constructor(message: string = 'Session expired') {
     super(message);
@@ -40,17 +22,13 @@ async function request<T>(
     },
   });
 
-  // Check if response is JSON
   const contentType = response.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
 
   if (!response.ok) {
-    // Detect authentication failures (401 Unauthorized)
     if (response.status === 401) {
-      throw new AuthError('Session expired. Please reconnect to Azure DevOps.');
+      throw new AuthError('Session expired. Please log in again.');
     }
-
-    // Try to parse JSON error, fallback to generic message
     if (isJson) {
       const error = await response.json().catch(() => ({ error: 'Request failed' }));
       throw new Error(error.error || `HTTP ${response.status}`);
@@ -58,7 +36,6 @@ async function request<T>(
     throw new Error(`HTTP ${response.status}: Request failed`);
   }
 
-  // Parse JSON response, handle non-JSON responses
   if (!isJson) {
     throw new Error('Invalid response from server');
   }
@@ -66,294 +43,187 @@ async function request<T>(
   return response.json();
 }
 
-function authHeaders(accessToken: string): Record<string, string> {
-  return { Authorization: `Bearer ${accessToken}` };
+function authHeaders(token: string): Record<string, string> {
+  return { Authorization: `Bearer ${token}` };
 }
 
-export async function generateWorkItems(
-  frames: FrameData[],
-  workItemType: WorkItemType = 'Task',
-  context?: string,
-  hierarchyContext?: HierarchyContext
-): Promise<{ workItemType: WorkItemType; frameWorkItems: FrameWorkItems[] }> {
-  const data = await request<{
-    workItemType: WorkItemType;
-    frameWorkItems: FrameWorkItems[];
-    frameTasks?: FrameTasks[];
-  }>('/api/generate', {
-    method: 'POST',
-    body: JSON.stringify({ frames, context, workItemType, hierarchyContext }),
+// Auth
+export function getPluginLoginUrl(code: string): string {
+  return `${API_URL}/auth/plugin?code=${encodeURIComponent(code)}`;
+}
+
+export async function pollPluginAuth(
+  code: string
+): Promise<{ status: 'pending' } | { status: 'complete'; session: Session; email: string }> {
+  return request(`/api/auth/plugin/poll?code=${encodeURIComponent(code)}`);
+}
+
+export interface Session {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+}
+
+// Projects
+export interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  context: string | null;
+}
+
+export async function getProjects(token: string): Promise<Project[]> {
+  return request('/api/projects', {
+    headers: authHeaders(token),
   });
-  return {
-    workItemType: data.workItemType,
-    frameWorkItems: data.frameWorkItems,
-  };
 }
 
-// Backwards compatibility
+// Epics
+export interface Epic {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+}
+
+export async function getEpics(token: string, projectId: string): Promise<Epic[]> {
+  return request(`/api/epics?projectId=${encodeURIComponent(projectId)}`, {
+    headers: authHeaders(token),
+  });
+}
+
+// Features
+export interface Feature {
+  id: string;
+  epic_id: string;
+  title: string;
+  description: string | null;
+}
+
+export async function getFeatures(token: string, epicId: string): Promise<Feature[]> {
+  return request(`/api/features?epicId=${encodeURIComponent(epicId)}`, {
+    headers: authHeaders(token),
+  });
+}
+
+// Stories
+export interface Story {
+  id: string;
+  feature_id: string;
+  title: string;
+  description: string | null;
+  acceptance_criteria: string | null;
+}
+
+export async function getStories(token: string, featureId: string): Promise<Story[]> {
+  return request(`/api/stories?featureId=${encodeURIComponent(featureId)}`, {
+    headers: authHeaders(token),
+  });
+}
+
+// Tasks
+export interface TaskInput {
+  title: string;
+  description?: string;
+  acceptance_criteria?: string;
+  complexity?: 'S' | 'M' | 'L';
+  source_frame_id?: string;
+  source_frame_name?: string;
+}
+
+export interface Task {
+  id: string;
+  story_id: string;
+  title: string;
+  description: string | null;
+  acceptance_criteria: string | null;
+  complexity: 'S' | 'M' | 'L' | null;
+}
+
+export async function saveTasks(
+  token: string,
+  storyId: string,
+  tasks: TaskInput[]
+): Promise<Task[]> {
+  return request('/api/tasks', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ story_id: storyId, tasks }),
+  });
+}
+
+// Generate tasks from Figma frames
+export interface GenerateRequest {
+  frames: {
+    id: string;
+    name: string;
+    imageBase64: string;
+  }[];
+  context?: string;
+  storyTitle?: string;
+  storyDescription?: string;
+}
+
 export async function generateTasks(
-  frames: FrameData[],
-  context?: string
-): Promise<FrameTasks[]> {
-  const data = await request<{ frameTasks: FrameTasks[] }>('/api/generate', {
+  token: string,
+  payload: GenerateRequest
+): Promise<{ tasks: TaskInput[] }> {
+  return request('/api/generate', {
     method: 'POST',
-    body: JSON.stringify({ frames, context, workItemType: 'Task' }),
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
   });
-  return data.frameTasks;
 }
 
-export function getAuthUrl(state: string): string {
-  return `${API_URL}/api/azure/auth?state=${encodeURIComponent(state)}`;
-}
+// Legacy support - convert to new format
+export async function generateWorkItems(
+  token: string,
+  frames: FrameData[],
+  context?: string,
+  storyTitle?: string,
+  storyDescription?: string
+): Promise<{ frameWorkItems: FrameWorkItems[] }> {
+  const result = await request<{ tasks: TaskInput[] }>('/api/generate', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      frames: frames.map(f => ({
+        id: f.id,
+        name: f.name,
+        imageBase64: f.imageBase64,
+      })),
+      context,
+      storyTitle,
+      storyDescription,
+    }),
+  });
 
-export async function pollAuthResult(
-  state: string
-): Promise<{ sessionId: string; accessToken: string } | null> {
-  const data = await request<{
-    status: string;
-    sessionId?: string;
-    accessToken?: string;
-  }>(`/api/azure/poll?state=${encodeURIComponent(state)}`);
+  // Group tasks by their source frame
+  const frameMap = new Map<string, FrameWorkItems>();
 
-  if (data.status === 'complete' && data.sessionId && data.accessToken) {
-    return { sessionId: data.sessionId, accessToken: data.accessToken };
+  for (const frame of frames) {
+    frameMap.set(frame.id, {
+      frameId: frame.id,
+      frameName: frame.name,
+      sectionName: frame.sectionName,
+      workItems: [],
+    });
   }
-  return null;
-}
 
-export async function refreshToken(
-  sessionId: string
-): Promise<string> {
-  const data = await request<{ accessToken: string }>(
-    '/api/azure/refresh',
-    {
-      method: 'POST',
-      body: JSON.stringify({ sessionId }),
+  for (const task of result.tasks) {
+    const frameId = task.source_frame_id || frames[0]?.id;
+    const frameWorkItems = frameMap.get(frameId);
+    if (frameWorkItems) {
+      frameWorkItems.workItems.push({
+        id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: task.title,
+        description: task.description,
+        selected: true,
+      });
     }
-  );
-  return data.accessToken;
-}
+  }
 
-export async function fetchOrgs(
-  accessToken: string
-): Promise<string[]> {
-  const data = await request<{ orgs: string[] }>(
-    '/api/azure/orgs',
-    { headers: authHeaders(accessToken) }
-  );
-  return data.orgs;
-}
-
-export async function fetchProjects(
-  accessToken: string,
-  org: string
-): Promise<AzureProject[]> {
-  const data = await request<{ projects: AzureProject[] }>(
-    `/api/azure/projects?org=${encodeURIComponent(org)}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.projects;
-}
-
-export async function fetchStories(
-  accessToken: string,
-  org: string,
-  projectId: string
-): Promise<AzureStory[]> {
-  const data = await request<{ stories: AzureStory[] }>(
-    `/api/azure/stories?org=${encodeURIComponent(org)}&projectId=${encodeURIComponent(projectId)}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.stories;
-}
-
-export async function fetchEpics(
-  accessToken: string,
-  org: string,
-  projectId: string
-): Promise<AzureStory[]> {
-  const data = await request<{ epics: AzureStory[] }>(
-    `/api/azure/epics?org=${encodeURIComponent(org)}&projectId=${encodeURIComponent(projectId)}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.epics;
-}
-
-export async function fetchStoriesByEpic(
-  accessToken: string,
-  org: string,
-  projectId: string,
-  epicId: number
-): Promise<AzureStory[]> {
-  const data = await request<{ stories: AzureStory[] }>(
-    `/api/azure/stories?org=${encodeURIComponent(org)}&projectId=${encodeURIComponent(projectId)}&epicId=${epicId}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.stories;
-}
-
-export async function fetchWorkItemDetails(
-  accessToken: string,
-  org: string,
-  workItemId: number
-): Promise<AzureWorkItemDetails> {
-  const data = await request<AzureWorkItemDetails>(
-    `/api/azure/workitem?org=${encodeURIComponent(org)}&id=${workItemId}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data;
-}
-
-export async function fetchTags(
-  accessToken: string,
-  org: string,
-  projectId: string
-): Promise<string[]> {
-  const data = await request<{ tags: string[] }>(
-    `/api/azure/projects?org=${encodeURIComponent(org)}&projectId=${encodeURIComponent(projectId)}&include=tags`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.tags;
-}
-
-export async function createTasks(
-  accessToken: string,
-  org: string,
-  projectId: string,
-  tasks: TaskToSubmit[]
-): Promise<CreateTaskResult[]> {
-  const data = await request<{ results: CreateTaskResult[] }>(
-    `/api/azure/tasks?org=${encodeURIComponent(org)}`,
-    {
-      method: 'POST',
-      headers: authHeaders(accessToken),
-      body: JSON.stringify({
-        projectId,
-        tasks: tasks.map((t) => ({
-          taskId: t.taskId,
-          title: t.title,
-          description: t.description,
-          parentStoryId: t.parentStoryId,
-          tags: t.tags,
-        })),
-      }),
-    }
-  );
-  return data.results;
-}
-
-export async function createUserStories(
-  accessToken: string,
-  org: string,
-  projectId: string,
-  stories: UserStoryToSubmit[],
-  workItemTypeName?: string
-): Promise<CreateUserStoryResult[]> {
-  const data = await request<{ results: CreateUserStoryResult[] }>(
-    `/api/azure/stories?org=${encodeURIComponent(org)}`,
-    {
-      method: 'POST',
-      headers: authHeaders(accessToken),
-      body: JSON.stringify({
-        projectId,
-        workItemTypeName,
-        stories: stories.map((s) => ({
-          workItemId: s.workItemId,
-          title: s.title,
-          description: s.description,
-          parentEpicId: s.parentEpicId,
-          tags: s.tags,
-        })),
-      }),
-    }
-  );
-  return data.results;
-}
-
-export async function fetchWorkItemTypes(
-  accessToken: string,
-  org: string,
-  projectId: string
-): Promise<WorkItemTypeInfo[]> {
-  const data = await request<{ workItemTypes: WorkItemTypeInfo[] }>(
-    `/api/azure/projects?org=${encodeURIComponent(org)}&projectId=${encodeURIComponent(projectId)}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.workItemTypes;
-}
-
-export async function fetchFeatures(
-  accessToken: string,
-  org: string,
-  projectId: string
-): Promise<AzureStory[]> {
-  const data = await request<{ features: AzureStory[] }>(
-    `/api/azure/features?org=${encodeURIComponent(org)}&projectId=${encodeURIComponent(projectId)}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.features;
-}
-
-export async function fetchFeaturesByEpic(
-  accessToken: string,
-  org: string,
-  projectId: string,
-  epicId: number
-): Promise<AzureStory[]> {
-  const data = await request<{ features: AzureStory[] }>(
-    `/api/azure/features?org=${encodeURIComponent(org)}&projectId=${encodeURIComponent(projectId)}&epicId=${epicId}`,
-    { headers: authHeaders(accessToken) }
-  );
-  return data.features;
-}
-
-export async function createEpics(
-  accessToken: string,
-  org: string,
-  projectId: string,
-  epics: EpicToSubmit[]
-): Promise<CreateEpicResult[]> {
-  const data = await request<{ results: CreateEpicResult[] }>(
-    `/api/azure/epics?org=${encodeURIComponent(org)}`,
-    {
-      method: 'POST',
-      headers: authHeaders(accessToken),
-      body: JSON.stringify({
-        projectId,
-        epics: epics.map((e) => ({
-          workItemId: e.workItemId,
-          title: e.title,
-          description: e.description,
-          tags: e.tags,
-        })),
-      }),
-    }
-  );
-  return data.results;
-}
-
-export async function createFeatures(
-  accessToken: string,
-  org: string,
-  projectId: string,
-  features: FeatureToSubmit[]
-): Promise<CreateFeatureResult[]> {
-  const data = await request<{ results: CreateFeatureResult[] }>(
-    `/api/azure/features?org=${encodeURIComponent(org)}`,
-    {
-      method: 'POST',
-      headers: authHeaders(accessToken),
-      body: JSON.stringify({
-        projectId,
-        features: features.map((f) => ({
-          workItemId: f.workItemId,
-          title: f.title,
-          description: f.description,
-          parentEpicId: f.parentEpicId,
-          tags: f.tags,
-        })),
-      }),
-    }
-  );
-  return data.results;
+  return {
+    frameWorkItems: Array.from(frameMap.values()),
+  };
 }

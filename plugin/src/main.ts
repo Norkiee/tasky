@@ -2,6 +2,7 @@ interface FrameData {
   id: string;
   name: string;
   sectionName?: string;
+  imageBase64: string;
   textContent: string[];
   componentNames: string[];
   nestedFrameNames: string[];
@@ -82,11 +83,40 @@ function extractNestedFrameNames(node: SceneNode): string[] {
   return frameNames.slice(0, 10);
 }
 
-function buildFrameData(frame: FrameNode, sectionName?: string): FrameData {
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return figma.base64Encode(bytes);
+}
+
+async function exportFrameAsBase64(frame: FrameNode): Promise<string> {
+  try {
+    // Export at 1x scale, max 1024px on longest side for reasonable file size
+    const maxSize = 1024;
+    const scale = Math.min(1, maxSize / Math.max(frame.width, frame.height));
+
+    const bytes = await frame.exportAsync({
+      format: 'PNG',
+      constraint: { type: 'SCALE', value: scale },
+    });
+
+    return uint8ArrayToBase64(bytes);
+  } catch (error) {
+    console.error('Failed to export frame:', error);
+    return '';
+  }
+}
+
+async function buildFrameData(frame: FrameNode, sectionName?: string): Promise<FrameData> {
+  const imageBase64 = await exportFrameAsBase64(frame);
+
   return {
     id: frame.id,
     name: frame.name,
     sectionName,
+    imageBase64,
     textContent: extractTextContent(frame),
     componentNames: extractComponentNames(frame),
     nestedFrameNames: extractNestedFrameNames(frame),
@@ -95,16 +125,17 @@ function buildFrameData(frame: FrameNode, sectionName?: string): FrameData {
   };
 }
 
-function getSelectedFrames(): SelectionResult {
+async function getSelectedFrames(): Promise<SelectionResult> {
   const frames: FrameData[] = [];
   const sections: SectionData[] = [];
 
+  const framePromises: Promise<FrameData>[] = [];
+  const frameNodes: { frame: FrameNode; sectionName?: string }[] = [];
+
   for (const node of figma.currentPage.selection) {
     if (node.type === 'FRAME') {
-      // Direct frame selection
-      frames.push(buildFrameData(node));
+      frameNodes.push({ frame: node });
     } else if (node.type === 'SECTION') {
-      // Section selected - get all child frames
       const sectionFrames = node.children
         .filter((child): child is FrameNode => child.type === 'FRAME');
 
@@ -114,31 +145,61 @@ function getSelectedFrames(): SelectionResult {
         frameCount: sectionFrames.length,
       });
 
-      // Add frames with section name
       for (const frame of sectionFrames) {
-        frames.push(buildFrameData(frame, node.name));
+        frameNodes.push({ frame, sectionName: node.name });
       }
     }
   }
 
+  // Export all frames in parallel
+  for (const { frame, sectionName } of frameNodes) {
+    framePromises.push(buildFrameData(frame, sectionName));
+  }
+
+  const exportedFrames = await Promise.all(framePromises);
+  frames.push(...exportedFrames);
+
   return { frames, sections };
+}
+
+function getSelectionCounts(): { frameCount: number; sectionCount: number; sections: SectionData[] } {
+  let frameCount = 0;
+  const sections: SectionData[] = [];
+
+  for (const node of figma.currentPage.selection) {
+    if (node.type === 'FRAME') {
+      frameCount++;
+    } else if (node.type === 'SECTION') {
+      const sectionFrames = node.children.filter(
+        (child): child is FrameNode => child.type === 'FRAME'
+      );
+      frameCount += sectionFrames.length;
+      sections.push({
+        id: node.id,
+        name: node.name,
+        frameCount: sectionFrames.length,
+      });
+    }
+  }
+
+  return { frameCount, sectionCount: sections.length, sections };
 }
 
 figma.showUI(__html__, { width: 700, height: 520 });
 
 figma.ui.onmessage = async (msg: { type: string; data?: unknown; height?: number }) => {
   if (msg.type === 'get-selection') {
-    const { frames, sections } = getSelectedFrames();
+    const { frames, sections } = await getSelectedFrames();
     figma.ui.postMessage({ type: 'selection', frames, sections });
   }
 
   if (msg.type === 'get-storage') {
-    const data = await figma.clientStorage.getAsync('taskscribe');
+    const data = await figma.clientStorage.getAsync('tasky');
     figma.ui.postMessage({ type: 'storage', data: data || {} });
   }
 
   if (msg.type === 'set-storage') {
-    await figma.clientStorage.setAsync('taskscribe', msg.data);
+    await figma.clientStorage.setAsync('tasky', msg.data);
   }
 
   if (msg.type === 'resize') {
@@ -148,11 +209,11 @@ figma.ui.onmessage = async (msg: { type: string; data?: unknown; height?: number
 };
 
 figma.on('selectionchange', () => {
-  const { frames, sections } = getSelectedFrames();
+  const { frameCount, sectionCount, sections } = getSelectionCounts();
   figma.ui.postMessage({
     type: 'selection-changed',
-    frameCount: frames.length,
-    sectionCount: sections.length,
+    frameCount,
+    sectionCount,
     sections,
   });
 });

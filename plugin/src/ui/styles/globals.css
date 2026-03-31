@@ -1,17 +1,20 @@
 :root {
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f5f5f5;
-  --color-text: #333333;
-  --color-text-secondary: #666666;
-  --color-text-tertiary: #999999;
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
-  --color-success: #198754;
-  --color-danger: #dc3545;
+  --color-bg: #0A0A0A;
+  --color-bg-secondary: #141414;
+  --color-bg-tertiary: #1A1A1A;
+  --color-bg-input: #0D0D0D;
+  --color-text: #FFFFFF;
+  --color-text-secondary: #A1A1A1;
+  --color-text-tertiary: #666666;
+  --color-primary: #8B5CF6;
+  --color-primary-hover: #7C3AED;
+  --color-success: #22C55E;
+  --color-danger: #EF4444;
   --color-warning: #ffc107;
-  --color-border: #e0e0e0;
-  --color-tag-bg: #ede9fe;
-  --color-tag-text: #7c3aed;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-hover: rgba(255, 255, 255, 0.2);
+  --color-tag-bg: rgba(139, 92, 246, 0.15);
+  --color-tag-text: #8B5CF6;
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -27,19 +30,21 @@
   --spacing-xl: 24px;
 }
 
-* {
-  margin: 0;
-  padding: 0;
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 body {
   font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: var(--font-size-md);
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   background: var(--color-bg);
   line-height: 1.5;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .plugin-container {
@@ -69,12 +74,13 @@ body {
 .screen-header h2 {
   font-size: var(--font-size-xl);
   font-weight: 600;
+  color: var(--color-text);
   margin-bottom: var(--spacing-xs);
 }
 
 .screen-header p {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
 }
 
 .screen-footer {
@@ -147,8 +153,9 @@ body {
   color: var(--color-danger);
   font-size: var(--font-size-sm);
   padding: var(--spacing-sm);
-  background: #fdf2f2;
+  background: rgba(239, 68, 68, 0.1);
   border-radius: var(--radius-sm);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .task-preview-list {
@@ -178,4 +185,56 @@ body {
   background: var(--color-bg);
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border);
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  padding: 0;
+  margin-bottom: var(--spacing-sm);
+}
+
+.back-button:hover {
+  color: var(--color-text-secondary);
+}
+
+.description {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.error-text {
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.login-screen .screen-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }

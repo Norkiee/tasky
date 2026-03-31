@@ -1,133 +1,78 @@
 import React, { useState, useCallback } from 'react';
-import {
-  Screen,
-  FrameData,
-  FrameWorkItems,
-  WorkItem,
-  WorkItemType,
-  WorkItemTypeInfo,
-  HierarchyContext,
-  TaskToSubmit,
-  UserStoryToSubmit,
-  EpicToSubmit,
-  FeatureToSubmit,
-  CreateTaskResult,
-  CreateUserStoryResult,
-  CreateEpicResult,
-  CreateFeatureResult,
-  isStoryLikeType,
-} from './types';
+import { FrameData, WorkItem, FrameWorkItems, PluginStorage } from './types';
 import { useFrameSelection } from './hooks/useFrameSelection';
-import { useAzureAuth } from './hooks/useAzureAuth';
+import { useAuth } from './hooks/useAuth';
 import { usePluginStorage } from './hooks/usePluginStorage';
 import { useAutoResize } from './hooks/useAutoResize';
-import { generateWorkItems, createTasks, createUserStories, createEpics, createFeatures } from './services/api';
+import { generateWorkItems, saveTasks, Project, Epic, Feature, Story, Session, TaskInput } from './services/api';
 import { HomeScreen } from './screens/HomeScreen';
-import { ConnectAzureScreen } from './screens/ConnectAzureScreen';
+import { LoginScreen } from './screens/LoginScreen';
 import { SelectProjectScreen } from './screens/SelectProjectScreen';
-import { WorkItemTypeScreen } from './screens/WorkItemTypeScreen';
 import { ContextScreen } from './screens/ContextScreen';
 import { GeneratingScreen } from './screens/GeneratingScreen';
 import { ReviewScreen } from './screens/ReviewScreen';
 import { SubmittingScreen } from './screens/SubmittingScreen';
 import { SuccessScreen } from './screens/SuccessScreen';
-import { PartialFailureScreen } from './screens/PartialFailureScreen';
 
-// Union type for results (all work item types)
-type SubmitResult = CreateTaskResult | CreateUserStoryResult | CreateEpicResult | CreateFeatureResult;
+type Screen = 'home' | 'login' | 'select-project' | 'context' | 'generating' | 'review' | 'submitting' | 'success';
+
+interface HierarchySelection {
+  project: Project;
+  epic?: Epic;
+  feature?: Feature;
+  story: Story;
+}
 
 export function App(): React.ReactElement {
   const [screen, setScreen] = useState<Screen>('home');
   const [error, setError] = useState<string | null>(null);
 
-  const { frames, sections, frameCount, sectionCount, requestFrames } = useFrameSelection();
-  const auth = useAzureAuth();
+  const { frames, frameCount, sectionCount, requestFrames } = useFrameSelection();
+  const auth = useAuth();
   const { storage, updateStorage } = usePluginStorage();
   const containerRef = useAutoResize();
 
-  // Work item type and hierarchy
-  const [workItemType, setWorkItemType] = useState<WorkItemType>(
-    storage.lastWorkItemType || 'UserStory'
-  );
-  const [hierarchyContext, setHierarchyContext] = useState<HierarchyContext>({});
-  const [availableTypes, setAvailableTypes] = useState<WorkItemTypeInfo[]>([]);
+  // Selection state
+  const [selection, setSelection] = useState<HierarchySelection | null>(null);
 
   // Generated work items
   const [frameWorkItems, setFrameWorkItems] = useState<FrameWorkItems[]>([]);
   const [completedFrameIds, setCompletedFrameIds] = useState<Set<string>>(new Set());
 
-  // Azure connection state
-  const [parentTitle, setParentTitle] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [azureOrg, setAzureOrg] = useState('');
-  const [azureProjectId, setAzureProjectId] = useState('');
-
   // Submission state
   const [submittedIds, setSubmittedIds] = useState<Set<string>>(new Set());
-  const [results, setResults] = useState<SubmitResult[]>([]);
+  const [savedCount, setSavedCount] = useState(0);
 
-  // Flow: home → work-item-type → connect-azure → select-project → select-parent → context → generating → review → submitting → success
+  // Flow: home → login → select-project → context → generating → review → submitting → success
 
   const handleContinueFromHome = useCallback(() => {
     requestFrames();
-    // Go to work item type selection first
-    setScreen('work-item-type');
-  }, [requestFrames]);
-
-  const handleConnectAzure = useCallback(() => {
-    auth.startAuth(() => {
-      setScreen('select-project');
-    });
-  }, [auth]);
-
-  // Called after selecting org/project and parent (combined screen)
-  const handleProjectSelected = useCallback(
-    (selection: {
-      org: string;
-      projectId: string;
-      availableTypes: WorkItemTypeInfo[];
-      hierarchyContext: HierarchyContext;
-      selectedTags: string[];
-      parentTitle: string;
-    }) => {
-      setAzureOrg(selection.org);
-      setAzureProjectId(selection.projectId);
-      setAvailableTypes(selection.availableTypes);
-      setHierarchyContext(selection.hierarchyContext);
-      setSelectedTags(selection.selectedTags);
-      setParentTitle(selection.parentTitle);
-
-      // Save to storage
-      updateStorage({
-        azureOrg: selection.org,
-        azureProjectId: selection.projectId,
-        lastEpicId: selection.hierarchyContext.epic?.id,
-        lastFeatureId: selection.hierarchyContext.feature?.id,
-        lastStoryId: selection.hierarchyContext.userStory?.id,
-        frequentTags: selection.selectedTags.slice(0, 5),
-      });
-
-      // Go straight to context screen
-      setScreen('context');
-    },
-    [updateStorage]
-  );
-
-  const handleSelectWorkItemType = useCallback((type: WorkItemType) => {
-    setWorkItemType(type);
-    updateStorage({ lastWorkItemType: type });
-
-    // Need to connect to Azure first if not authenticated
     if (!auth.isAuthenticated) {
-      setScreen('connect-azure');
+      setScreen('login');
     } else {
       setScreen('select-project');
     }
-  }, [updateStorage, auth.isAuthenticated]);
+  }, [requestFrames, auth.isAuthenticated]);
+
+  const handleLogin = useCallback((session: Session, email: string) => {
+    auth.setSession(session, email);
+    setScreen('select-project');
+  }, [auth]);
+
+  const handleProjectSelected = useCallback((sel: HierarchySelection) => {
+    setSelection(sel);
+    updateStorage({
+      projectId: sel.project.id,
+      epicId: sel.epic?.id,
+      featureId: sel.feature?.id,
+      storyId: sel.story.id,
+    });
+    setScreen('context');
+  }, [updateStorage]);
 
   const handleSessionExpired = useCallback(() => {
     auth.logout();
-    setScreen('connect-azure');
+    setScreen('login');
   }, [auth]);
 
   const handleGenerate = useCallback(
@@ -138,10 +83,11 @@ export function App(): React.ReactElement {
 
       try {
         const { frameWorkItems: generated } = await generateWorkItems(
+          auth.accessToken!,
           frames,
-          workItemType,
           context,
-          hierarchyContext
+          selection?.story.title,
+          selection?.story.description || undefined
         );
         setFrameWorkItems(generated);
         setCompletedFrameIds(new Set(generated.map((fwi) => fwi.frameId)));
@@ -151,12 +97,8 @@ export function App(): React.ReactElement {
         setScreen('context');
       }
     },
-    [frames, workItemType, hierarchyContext]
+    [frames, auth.accessToken, selection]
   );
-
-  const getTotalWorkItemCount = useCallback(() => {
-    return frameWorkItems.reduce((sum, fwi) => sum + fwi.workItems.length, 0);
-  }, [frameWorkItems]);
 
   const handleWorkItemUpdate = useCallback(
     (frameId: string, workItemId: string, updates: Partial<WorkItem>) => {
@@ -191,13 +133,6 @@ export function App(): React.ReactElement {
     );
   }, []);
 
-  const handleRemoveTag = useCallback(
-    (frameId: string, workItemId: string, tag: string) => {
-      setSelectedTags((prev) => prev.filter((t) => t !== tag));
-    },
-    []
-  );
-
   const getSelectedWorkItems = useCallback(() => {
     const items: WorkItem[] = [];
     for (const fwi of frameWorkItems) {
@@ -212,101 +147,21 @@ export function App(): React.ReactElement {
 
   const handleSubmit = useCallback(async () => {
     const selectedItems = getSelectedWorkItems();
-    if (selectedItems.length === 0) return;
+    if (selectedItems.length === 0 || !selection) return;
 
     setScreen('submitting');
     setSubmittedIds(new Set());
 
     try {
-      let submitResults: SubmitResult[];
+      const tasks: TaskInput[] = selectedItems.map((item) => ({
+        title: item.title,
+        description: item.description,
+      }));
 
-      switch (workItemType) {
-        case 'Epic': {
-          // Create epics
-          const epics: EpicToSubmit[] = selectedItems.map((item) => ({
-            workItemId: item.id,
-            title: item.title,
-            description: item.description,
-            tags: selectedTags,
-          }));
-          submitResults = await createEpics(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            epics
-          );
-          break;
-        }
-        case 'Feature': {
-          // Create features
-          const features: FeatureToSubmit[] = selectedItems.map((item) => ({
-            workItemId: item.id,
-            title: item.title,
-            description: item.description,
-            parentEpicId: hierarchyContext.epic?.id,
-            tags: selectedTags,
-          }));
-          submitResults = await createFeatures(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            features
-          );
-          break;
-        }
-        case 'UserStory': {
-          // Create user stories - parent can be epic or feature
-          const parentId = hierarchyContext.feature?.id || hierarchyContext.epic?.id;
-          if (!parentId) {
-            throw new Error('No parent selected for user stories');
-          }
-          const stories: UserStoryToSubmit[] = selectedItems.map((item) => ({
-            workItemId: item.id,
-            title: item.title,
-            description: item.description,
-            tags: selectedTags,
-            parentEpicId: parentId,
-          }));
-          // Find the correct work item type name (User Story, Product Backlog Item, etc.)
-          const storyTypeName = availableTypes.find((t) => isStoryLikeType(t.name))?.name;
-          submitResults = await createUserStories(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            stories,
-            storyTypeName
-          );
-          break;
-        }
-        case 'Task':
-        default: {
-          // Create tasks
-          if (!hierarchyContext.userStory?.id) {
-            throw new Error('No user story selected for tasks');
-          }
-          const tasks: TaskToSubmit[] = selectedItems.map((item) => ({
-            taskId: item.id,
-            title: item.title,
-            description: item.description,
-            tags: selectedTags,
-            parentStoryId: hierarchyContext.userStory!.id,
-          }));
-          submitResults = await createTasks(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            tasks
-          );
-          break;
-        }
-      }
-
-      setResults(submitResults);
-      const allIds = new Set(selectedItems.map((item) => item.id));
-      setSubmittedIds(allIds);
-
-      const allSuccess = submitResults.every((r) => r.success);
-      setScreen(allSuccess ? 'success' : 'partial-failure');
+      const savedTasks = await saveTasks(auth.accessToken!, selection.story.id, tasks);
+      setSavedCount(savedTasks.length);
+      setSubmittedIds(new Set(selectedItems.map((item) => item.id)));
+      setScreen('success');
     } catch (err) {
       if (err instanceof Error && err.name === 'AuthError') {
         handleSessionExpired();
@@ -315,154 +170,13 @@ export function App(): React.ReactElement {
         setScreen('review');
       }
     }
-  }, [
-    getSelectedWorkItems,
-    workItemType,
-    selectedTags,
-    hierarchyContext,
-    auth.accessToken,
-    azureOrg,
-    azureProjectId,
-    handleSessionExpired,
-  ]);
-
-  const handleRetry = useCallback(async () => {
-    const selectedItems = getSelectedWorkItems();
-    const failedIds = results.filter((r) => !r.success).map((r) =>
-      'workItemId' in r ? r.workItemId : ('taskId' in r ? r.taskId : '')
-    );
-    const failedItems = selectedItems.filter((item) => failedIds.includes(item.id));
-
-    if (failedItems.length === 0) return;
-
-    setScreen('submitting');
-    setSubmittedIds(new Set());
-
-    try {
-      let retryResults: SubmitResult[];
-
-      switch (workItemType) {
-        case 'Epic': {
-          const epics: EpicToSubmit[] = failedItems.map((item) => ({
-            workItemId: item.id,
-            title: item.title,
-            description: item.description,
-            tags: selectedTags,
-          }));
-          retryResults = await createEpics(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            epics
-          );
-          break;
-        }
-        case 'Feature': {
-          const features: FeatureToSubmit[] = failedItems.map((item) => ({
-            workItemId: item.id,
-            title: item.title,
-            description: item.description,
-            parentEpicId: hierarchyContext.epic?.id,
-            tags: selectedTags,
-          }));
-          retryResults = await createFeatures(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            features
-          );
-          break;
-        }
-        case 'UserStory': {
-          const parentId = hierarchyContext.feature?.id || hierarchyContext.epic?.id;
-          const stories: UserStoryToSubmit[] = failedItems.map((item) => ({
-            workItemId: item.id,
-            title: item.title,
-            description: item.description,
-            tags: selectedTags,
-            parentEpicId: parentId!,
-          }));
-          // Find the correct work item type name
-          const storyTypeName = availableTypes.find((t) => isStoryLikeType(t.name))?.name;
-          retryResults = await createUserStories(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            stories,
-            storyTypeName
-          );
-          break;
-        }
-        case 'Task':
-        default: {
-          const tasks: TaskToSubmit[] = failedItems.map((item) => ({
-            taskId: item.id,
-            title: item.title,
-            description: item.description,
-            tags: selectedTags,
-            parentStoryId: hierarchyContext.userStory!.id,
-          }));
-          retryResults = await createTasks(
-            auth.accessToken!,
-            azureOrg,
-            azureProjectId,
-            tasks
-          );
-          break;
-        }
-      }
-
-      // Merge results
-      const updatedResults = results.map((r) => {
-        const id = 'workItemId' in r ? r.workItemId : ('taskId' in r ? r.taskId : '');
-        const retryResult = retryResults.find((rr) =>
-          ('workItemId' in rr ? rr.workItemId : ('taskId' in rr ? rr.taskId : '')) === id
-        );
-        return retryResult || r;
-      });
-      setResults(updatedResults);
-
-      const allIds = new Set(selectedItems.map((item) => item.id));
-      setSubmittedIds(allIds);
-
-      const allSuccess = updatedResults.every((r) => r.success);
-      setScreen(allSuccess ? 'success' : 'partial-failure');
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AuthError') {
-        handleSessionExpired();
-      } else {
-        setError(err instanceof Error ? err.message : 'Retry failed');
-        setScreen('partial-failure');
-      }
-    }
-  }, [
-    results,
-    getSelectedWorkItems,
-    workItemType,
-    selectedTags,
-    hierarchyContext,
-    auth.accessToken,
-    azureOrg,
-    azureProjectId,
-    handleSessionExpired,
-  ]);
-
-  const handleViewInAzure = useCallback(() => {
-    const firstSuccess = results.find((r) => r.success);
-    if (firstSuccess) {
-      // Handle both CreateUserStoryResult (url) and CreateTaskResult (taskUrl)
-      const url = 'url' in firstSuccess ? firstSuccess.url : ('taskUrl' in firstSuccess ? firstSuccess.taskUrl : undefined);
-      if (url) {
-        window.open(url, '_blank');
-      }
-    }
-  }, [results]);
+  }, [getSelectedWorkItems, selection, auth.accessToken, handleSessionExpired]);
 
   const handleGoHome = useCallback(() => {
     setFrameWorkItems([]);
-    setResults([]);
+    setSavedCount(0);
     setError(null);
-    setHierarchyContext({});
+    setSelection(null);
     setCompletedFrameIds(new Set());
     setSubmittedIds(new Set());
     setScreen('home');
@@ -475,10 +189,10 @@ export function App(): React.ReactElement {
       taskId: item.id,
       title: item.title,
       description: item.description,
-      tags: selectedTags,
-      parentStoryId: hierarchyContext.userStory?.id || 0,
+      tags: [],
+      parentStoryId: 0,
     }));
-  }, [getSelectedWorkItems, selectedTags, hierarchyContext]);
+  }, [getSelectedWorkItems]);
 
   return (
     <div className="plugin-container" ref={containerRef}>
@@ -494,48 +208,31 @@ export function App(): React.ReactElement {
         />
       )}
 
-      {screen === 'work-item-type' && (
-        <WorkItemTypeScreen
-          frameCount={frameCount}
-          sectionCount={sectionCount}
-          savedWorkItemType={storage.lastWorkItemType}
-          onSelect={handleSelectWorkItemType}
+      {screen === 'login' && (
+        <LoginScreen
+          onLogin={handleLogin}
           onBack={() => setScreen('home')}
-        />
-      )}
-
-      {screen === 'connect-azure' && (
-        <ConnectAzureScreen
-          frameCount={frameCount}
-          isAuthenticated={auth.isAuthenticated}
-          onConnect={handleConnectAzure}
-          onContinue={() => setScreen('select-project')}
-          onBack={() => setScreen('work-item-type')}
         />
       )}
 
       {screen === 'select-project' && (
         <SelectProjectScreen
           accessToken={auth.accessToken!}
-          workItemType={workItemType}
-          savedOrg={storage.azureOrg}
-          savedProjectId={storage.azureProjectId}
-          savedEpicId={storage.lastEpicId}
-          savedFeatureId={storage.lastFeatureId}
-          savedStoryId={storage.lastStoryId}
-          savedFrequentTags={storage.frequentTags}
+          savedProjectId={storage.projectId}
+          savedEpicId={storage.epicId}
+          savedFeatureId={storage.featureId}
+          savedStoryId={storage.storyId}
           onContinue={handleProjectSelected}
           onSessionExpired={handleSessionExpired}
-          onRefreshToken={auth.refresh}
-          onBack={() => setScreen('work-item-type')}
+          onBack={() => setScreen('home')}
         />
       )}
 
       {screen === 'context' && (
         <ContextScreen
           frames={frames}
-          workItemType={workItemType}
-          parentTitle={parentTitle}
+          workItemType="Task"
+          parentTitle={selection?.story.title || ''}
           onGenerate={handleGenerate}
           onBack={() => setScreen('select-project')}
         />
@@ -544,7 +241,7 @@ export function App(): React.ReactElement {
       {screen === 'generating' && (
         <GeneratingScreen
           frames={frames}
-          workItemType={workItemType}
+          workItemType="Task"
           completedFrameIds={completedFrameIds}
         />
       )}
@@ -552,12 +249,12 @@ export function App(): React.ReactElement {
       {screen === 'review' && (
         <ReviewScreen
           frameWorkItems={frameWorkItems}
-          workItemType={workItemType}
-          selectedTags={selectedTags}
-          parentTitle={parentTitle}
+          workItemType="Task"
+          selectedTags={[]}
+          parentTitle={selection?.story.title || ''}
           onWorkItemUpdate={handleWorkItemUpdate}
           onWorkItemToggle={handleWorkItemToggle}
-          onRemoveTag={handleRemoveTag}
+          onRemoveTag={() => {}}
           onSubmit={handleSubmit}
           onBack={() => setScreen('context')}
         />
@@ -566,28 +263,19 @@ export function App(): React.ReactElement {
       {screen === 'submitting' && (
         <SubmittingScreen
           tasks={getTasksForSubmitting()}
-          workItemType={workItemType}
+          workItemType="Task"
           completedTaskIds={submittedIds}
         />
       )}
 
       {screen === 'success' && (
         <SuccessScreen
-          results={results}
-          workItemType={workItemType}
-          parentTitle={parentTitle}
-          tags={selectedTags}
-          onViewInAzure={handleViewInAzure}
+          results={[]}
+          workItemType="Task"
+          parentTitle={selection?.story.title || ''}
+          tags={[]}
+          onViewInAzure={() => {}}
           onGoHome={handleGoHome}
-        />
-      )}
-
-      {screen === 'partial-failure' && (
-        <PartialFailureScreen
-          results={results}
-          workItemType={workItemType}
-          onRetry={handleRetry}
-          onViewSuccessful={handleViewInAzure}
         />
       )}
     </div>

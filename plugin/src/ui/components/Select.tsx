@@ -31,16 +31,17 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     padding: '10px 12px',
     borderRadius: '10px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: '#0D0D0D',
+    color: '#FFFFFF',
     fontSize: '13px',
     fontFamily: 'inherit',
-    background: '#ffffff',
     cursor: 'pointer',
     transition: 'border-color 0.15s, box-shadow 0.15s',
   },
   triggerFocused: {
-    borderColor: '#7c3aed',
-    boxShadow: '0 0 0 2px rgba(124, 58, 237, 0.1)',
+    borderColor: '#8B5CF6',
+    boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.15)',
   },
   triggerText: {
     flex: 1,
@@ -49,7 +50,7 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
   },
   placeholder: {
-    color: '#999999',
+    color: '#666666',
   },
   chevron: {
     marginLeft: '8px',
@@ -64,10 +65,10 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     right: 0,
     marginTop: '4px',
-    background: '#ffffff',
-    border: '1px solid #e0e0e0',
+    background: '#141414',
+    border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
     zIndex: 100,
     maxHeight: '200px',
     overflowY: 'auto',
@@ -79,19 +80,21 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     padding: '10px 12px',
     fontSize: '13px',
+    color: '#A1A1A1',
     cursor: 'pointer',
     borderRadius: '8px',
     transition: 'background 0.1s',
   },
   optionHovered: {
-    background: '#f3e8ff',
+    background: 'rgba(139, 92, 246, 0.15)',
+    color: '#FFFFFF',
   },
   optionSelected: {
     background: 'transparent',
   },
   checkmark: {
     marginLeft: 'auto',
-    color: '#7c3aed',
+    color: '#8B5CF6',
   },
 };
 
@@ -109,7 +112,6 @@ export function Select({
   const selectedOption = options.find((opt) => opt.value === value);
   const displayText = selectedOption?.label || placeholder || 'Select...';
 
-  // Only add click-outside listener when dropdown is open
   useEffect(() => {
     if (!isOpen) return;
 
@@ -194,7 +196,7 @@ export function Select({
                   >
                     <path
                       d="M2.5 7L5.5 10L11.5 4"
-                      stroke="#7c3aed"
+                      stroke="#8B5CF6"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"

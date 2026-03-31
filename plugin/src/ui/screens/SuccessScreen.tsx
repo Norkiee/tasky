@@ -18,8 +18,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: '48px',
     height: '48px',
     borderRadius: '50%',
-    background: '#d4edda',
-    color: '#198754',
+    background: 'rgba(139, 92, 246, 0.15)',
+    color: '#8B5CF6',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -29,10 +29,11 @@ const styles: Record<string, React.CSSProperties> = {
   heading: {
     fontSize: '20px',
     fontWeight: 600,
+    color: '#FFFFFF',
   },
   detail: {
     fontSize: '12px',
-    color: '#666666',
+    color: '#A1A1A1',
   },
   buttons: {
     display: 'flex',

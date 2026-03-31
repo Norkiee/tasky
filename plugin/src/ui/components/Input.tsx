@@ -8,6 +8,8 @@ interface InputProps {
   multiline?: boolean;
   rows?: number;
   error?: string;
+  type?: 'text' | 'email' | 'password';
+  maxLength?: number;
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -24,7 +26,9 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     padding: '10px 12px',
     borderRadius: '10px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: '#0D0D0D',
+    color: '#FFFFFF',
     fontSize: '13px',
     fontFamily: 'inherit',
     resize: 'vertical' as const,
@@ -33,7 +37,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   error: {
     fontSize: '11px',
-    color: '#dc3545',
+    color: '#EF4444',
   },
 };
 
@@ -45,10 +49,12 @@ export function Input({
   multiline = false,
   rows = 3,
   error,
+  type = 'text',
+  maxLength,
 }: InputProps): React.ReactElement {
   const inputStyle = {
     ...styles.input,
-    ...(error ? { borderColor: '#dc3545' } : {}),
+    ...(error ? { borderColor: '#EF4444' } : {}),
   };
 
   return (
@@ -61,14 +67,16 @@ export function Input({
           placeholder={placeholder}
           rows={rows}
           style={inputStyle}
+          maxLength={maxLength}
         />
       ) : (
         <input
-          type="text"
+          type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           style={inputStyle}
+          maxLength={maxLength}
         />
       )}
       {error && <span style={styles.error}>{error}</span>}

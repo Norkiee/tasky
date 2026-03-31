@@ -22,10 +22,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     fontSize: '13px',
-    color: '#666666',
+    color: '#A1A1A1',
   },
   frameItemCompleted: {
-    color: '#7c3aed',
+    color: '#8B5CF6',
   },
   frameName: {
     overflow: 'hidden',
@@ -36,14 +36,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
     width: '16px',
     height: '16px',
-    color: '#7c3aed',
+    color: '#8B5CF6',
   },
   spinner: {
     flexShrink: 0,
     width: '16px',
     height: '16px',
-    border: '2px solid #e0e0e0',
-    borderTopColor: '#7c3aed',
+    border: '2px solid rgba(255, 255, 255, 0.1)',
+    borderTopColor: '#8B5CF6',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },
@@ -52,7 +52,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: '16px',
     height: '16px',
     borderRadius: '50%',
-    border: '2px solid #e0e0e0',
+    border: '2px solid rgba(255, 255, 255, 0.1)',
   },
 };
 
@@ -86,7 +86,6 @@ export function GeneratingScreen({
         <div style={styles.frameList}>
           {frames.map((frame) => {
             const isCompleted = completedFrameIds.has(frame.id);
-            const isPending = !isCompleted && completedCount < totalCount;
             const isActive = !isCompleted && frames.findIndex(f => !completedFrameIds.has(f.id)) === frames.indexOf(frame);
 
             return (

@@ -16,8 +16,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '12px',
     fontSize: '11px',
     fontWeight: 500,
-    background: '#e7f1ff',
-    color: '#0d6efd',
+    background: 'rgba(139, 92, 246, 0.15)',
+    color: '#8B5CF6',
     border: 'none',
     cursor: 'default',
     lineHeight: '1.6',
@@ -26,7 +26,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   selected: {
-    background: '#0d6efd',
+    background: '#8B5CF6',
     color: '#ffffff',
   },
   removeBtn: {

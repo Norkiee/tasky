@@ -1,7 +1,10 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const HtmlInlineScriptPlugin = require('html-inline-script-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+require('dotenv').config();
 
 module.exports = (env, argv) => ({
   entry: {
@@ -30,6 +33,9 @@ module.exports = (env, argv) => ({
     extensions: ['.tsx', '.ts', '.js'],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      VITE_API_URL: JSON.stringify(process.env.VITE_API_URL || 'http://localhost:3000'),
+    }),
     new HtmlWebpackPlugin({
       template: './src/ui.html',
       filename: 'ui.html',

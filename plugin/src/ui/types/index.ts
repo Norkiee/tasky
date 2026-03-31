@@ -41,6 +41,7 @@ export interface FrameData {
   id: string;
   name: string;
   sectionName?: string; // Which Figma section this frame belongs to
+  imageBase64: string; // Base64 encoded PNG of the frame
   textContent: string[];
   componentNames: string[];
   nestedFrameNames: string[];
@@ -164,6 +165,16 @@ export interface AzureWorkItemDetails {
 }
 
 export interface PluginStorage {
+  // Project hierarchy
+  projectId?: string;
+  epicId?: string;
+  featureId?: string;
+  storyId?: string;
+  // Auth
+  accessToken?: string;
+  refreshToken?: string;
+  email?: string;
+  // Legacy Azure fields (can be removed after migration)
   azureProjectId?: string;
   azureOrg?: string;
   lastStoryId?: number;
@@ -172,9 +183,6 @@ export interface PluginStorage {
   lastWorkItemType?: WorkItemType;
   frequentTags?: string[];
   sessionId?: string;
-  // Note: accessToken is stored for session persistence across plugin restarts.
-  // For higher security, consider storing only sessionId and refreshing tokens on each session.
-  accessToken?: string;
 }
 
 export type Screen =

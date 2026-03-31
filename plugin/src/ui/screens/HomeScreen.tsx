@@ -18,15 +18,16 @@ const styles: Record<string, React.CSSProperties> = {
     width: '22px',
     height: '22px',
     borderRadius: '5px',
-    border: '2.5px solid #1a1a2e',
+    border: '2.5px solid rgba(255,255,255,0.1)',
   },
   heading: {
     fontSize: '20px',
     fontWeight: 700,
+    color: '#FFFFFF',
   },
   subtext: {
     fontSize: '13px',
-    color: '#999999',
+    color: '#666666',
     maxWidth: '260px',
     lineHeight: '1.5',
   },

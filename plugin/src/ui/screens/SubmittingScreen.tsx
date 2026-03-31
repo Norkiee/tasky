@@ -19,6 +19,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     fontSize: '12px',
+    color: '#A1A1A1',
   },
   icon: {
     width: '16px',

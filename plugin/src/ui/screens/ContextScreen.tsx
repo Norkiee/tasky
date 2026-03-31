@@ -14,12 +14,12 @@ interface ContextScreenProps {
 
 const styles: Record<string, React.CSSProperties> = {
   parentInfo: {
-    background: '#f3e8ff',
-    border: '1px solid #d8b4fe',
+    background: 'rgba(139, 92, 246, 0.15)',
+    border: '1px solid rgba(139, 92, 246, 0.3)',
     borderRadius: '8px',
     padding: '10px 12px',
     fontSize: '12px',
-    color: '#6b21a8',
+    color: '#8B5CF6',
     marginBottom: '12px',
   },
 };
@@ -55,7 +55,6 @@ export function ContextScreen({
 
   const itemLabel = getItemLabel();
 
-  // Group frames by section for display
   const framesBySection: Record<string, FrameData[]> = {};
   const ungroupedFrames: FrameData[] = [];
 
@@ -86,7 +85,7 @@ export function ContextScreen({
       <div className="frame-chips">
         {Object.entries(framesBySection).map(([sectionName, sectionFrames]) => (
           <div key={sectionName} style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 500, marginBottom: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: 500, marginBottom: '4px' }}>
               {sectionName}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>

@@ -16,23 +16,23 @@ interface WorkItemCardProps {
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '8px',
     padding: '12px',
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#141414',
   },
   cardDeselected: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '8px',
     padding: '12px',
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    backgroundColor: '#f5f5f5',
-    opacity: 0.6,
+    backgroundColor: '#0D0D0D',
+    opacity: 0.5,
   },
   checkboxRow: {
     display: 'flex',
@@ -44,7 +44,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: '16px',
     marginTop: '2px',
     cursor: 'pointer',
-    accentColor: '#7c3aed',
+    accentColor: '#8B5CF6',
   },
   content: {
     flex: 1,
@@ -55,7 +55,9 @@ const styles: Record<string, React.CSSProperties> = {
   titleTextarea: {
     padding: '6px 8px',
     borderRadius: '4px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: '#0D0D0D',
+    color: '#FFFFFF',
     fontSize: '13px',
     fontWeight: 600,
     fontFamily: 'inherit',
@@ -70,7 +72,9 @@ const styles: Record<string, React.CSSProperties> = {
   textarea: {
     padding: '6px 8px',
     borderRadius: '4px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: '#0D0D0D',
+    color: '#A1A1A1',
     fontSize: '12px',
     fontFamily: 'inherit',
     resize: 'vertical' as const,
@@ -87,7 +91,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   deselectedText: {
     fontSize: '12px',
-    color: '#999999',
+    color: '#666666',
     fontStyle: 'italic',
   },
 };
@@ -120,7 +124,6 @@ export function WorkItemCard({
   const { itemLabel, titlePlaceholder, hasDescription } = getLabels();
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize title textarea
   useEffect(() => {
     if (titleRef.current) {
       titleRef.current.style.height = 'auto';

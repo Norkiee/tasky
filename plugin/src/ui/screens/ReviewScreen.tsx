@@ -18,12 +18,12 @@ interface ReviewScreenProps {
 
 const styles: Record<string, React.CSSProperties> = {
   parentInfo: {
-    background: '#f3e8ff',
-    border: '1px solid #d8b4fe',
+    background: 'rgba(139, 92, 246, 0.15)',
+    border: '1px solid rgba(139, 92, 246, 0.3)',
     borderRadius: '8px',
     padding: '10px 12px',
     fontSize: '12px',
-    color: '#6b21a8',
+    color: '#8B5CF6',
     marginBottom: '12px',
   },
   frameGroup: {
@@ -34,7 +34,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '8px 12px',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1A1A1A',
     borderRadius: '6px',
     cursor: 'pointer',
     userSelect: 'none',
@@ -52,12 +52,12 @@ const styles: Record<string, React.CSSProperties> = {
   frameName: {
     fontSize: '13px',
     fontWeight: 600,
-    color: '#333333',
+    color: '#FFFFFF',
   },
   itemCount: {
     fontSize: '11px',
-    color: '#666666',
-    backgroundColor: '#e0e0e0',
+    color: '#A1A1A1',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: '2px 8px',
     borderRadius: '10px',
   },
@@ -70,7 +70,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footerStats: {
     fontSize: '13px',
-    color: '#666666',
+    color: '#A1A1A1',
     marginBottom: '8px',
     textAlign: 'center' as const,
   },
@@ -125,7 +125,6 @@ export function ReviewScreen({
     0
   );
 
-  // Group frames by section
   const framesBySection: Record<string, FrameWorkItems[]> = {};
   const ungroupedFrames: FrameWorkItems[] = [];
 
@@ -197,7 +196,7 @@ export function ReviewScreen({
       <div className="screen-header">
         <h2>
           Review {itemLabel}{' '}
-          <span style={{ fontWeight: 400, color: '#999999' }}>
+          <span style={{ fontWeight: 400, color: '#666666' }}>
             ({totalItems} total)
           </span>
         </h2>
@@ -211,7 +210,6 @@ export function ReviewScreen({
       )}
 
       <div className="task-list">
-        {/* Render grouped frames by section */}
         {Object.entries(framesBySection).map(([sectionName, frames]) => (
           <SectionGroup
             key={sectionName}
@@ -222,7 +220,6 @@ export function ReviewScreen({
           </SectionGroup>
         ))}
 
-        {/* Render ungrouped frames */}
         {ungroupedFrames.map(renderFrameGroup)}
       </div>
 
