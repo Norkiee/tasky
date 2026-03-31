@@ -72,7 +72,11 @@ export async function extractWorkItems(content: string): Promise<ExtractedWorkIt
   });
 
   const text = response.content[0].type === 'text' ? response.content[0].text : '';
-  return JSON.parse(text);
+  return JSON.parse(stripMarkdownFences(text));
+}
+
+function stripMarkdownFences(text: string): string {
+  return text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 }
 
 export async function generateTasks(
@@ -113,6 +117,6 @@ export async function generateTasks(
   });
 
   const text = response.content[0].type === 'text' ? response.content[0].text : '';
-  const parsed = JSON.parse(text);
+  const parsed = JSON.parse(stripMarkdownFences(text));
   return parsed.tasks;
 }

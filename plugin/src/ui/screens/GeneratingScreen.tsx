@@ -9,50 +9,24 @@ interface GeneratingScreenProps {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  frameList: {
+  currentFrame: {
     marginTop: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    maxWidth: '100%',
-    padding: '0 16px',
-  },
-  frameItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    padding: '12px 16px',
+    background: 'rgba(139, 92, 246, 0.15)',
+    borderRadius: '10px',
     fontSize: '13px',
-    color: '#A1A1A1',
-  },
-  frameItemCompleted: {
+    fontWeight: 500,
     color: '#8B5CF6',
-  },
-  frameName: {
+    textAlign: 'center',
+    maxWidth: '280px',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  checkmark: {
-    flexShrink: 0,
-    width: '16px',
-    height: '16px',
-    color: '#8B5CF6',
-  },
-  spinner: {
-    flexShrink: 0,
-    width: '16px',
-    height: '16px',
-    border: '2px solid rgba(255, 255, 255, 0.1)',
-    borderTopColor: '#8B5CF6',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-  },
-  pending: {
-    flexShrink: 0,
-    width: '16px',
-    height: '16px',
-    borderRadius: '50%',
-    border: '2px solid rgba(255, 255, 255, 0.1)',
+  progress: {
+    marginTop: '8px',
+    fontSize: '12px',
+    color: '#666666',
   },
 };
 
@@ -76,46 +50,27 @@ export function GeneratingScreen({
 
   const itemLabel = getItemLabel();
 
+  // Find the current frame being processed
+  const currentFrame = frames.find(f => !completedFrameIds.has(f.id));
+
   return (
     <div className="screen screen-center">
       <LoadingSpinner
         label={`Generating ${itemLabel}...`}
-        sublabel={`Analyzing ${completedCount} of ${totalCount} frame${totalCount > 1 ? 's' : ''}`}
+        sublabel={totalCount > 1
+          ? `Frame ${completedCount + 1} of ${totalCount}`
+          : 'Analyzing your design'
+        }
       />
-      {frames.length > 1 && (
-        <div style={styles.frameList}>
-          {frames.map((frame) => {
-            const isCompleted = completedFrameIds.has(frame.id);
-            const isActive = !isCompleted && frames.findIndex(f => !completedFrameIds.has(f.id)) === frames.indexOf(frame);
-
-            return (
-              <div
-                key={frame.id}
-                style={{
-                  ...styles.frameItem,
-                  ...(isCompleted ? styles.frameItemCompleted : {}),
-                }}
-              >
-                {isCompleted ? (
-                  <svg style={styles.checkmark} viewBox="0 0 16 16" fill="none">
-                    <path
-                      d="M3 8L6.5 11.5L13 4.5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : isActive ? (
-                  <div style={styles.spinner} />
-                ) : (
-                  <div style={styles.pending} />
-                )}
-                <span style={styles.frameName}>{frame.name}</span>
-              </div>
-            );
-          })}
+      {currentFrame && (
+        <div style={styles.currentFrame}>
+          {currentFrame.name}
         </div>
+      )}
+      {totalCount > 1 && (
+        <p style={styles.progress}>
+          {completedCount} of {totalCount} frames complete
+        </p>
       )}
     </div>
   );
