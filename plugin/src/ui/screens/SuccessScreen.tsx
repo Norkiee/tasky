@@ -1,15 +1,11 @@
 import React from 'react';
-import { CreateTaskResult, CreateUserStoryResult, CreateEpicResult, CreateFeatureResult, WorkItemType } from '../types';
+import { WorkItemType } from '../types';
 import { Button } from '../components/Button';
 
-type SubmitResult = CreateTaskResult | CreateUserStoryResult | CreateEpicResult | CreateFeatureResult;
-
 interface SuccessScreenProps {
-  results: SubmitResult[];
+  count: number;
   workItemType?: WorkItemType;
   parentTitle: string;
-  tags: string[];
-  onViewInAzure: () => void;
   onGoHome: () => void;
 }
 
@@ -44,15 +40,11 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 export function SuccessScreen({
-  results,
+  count,
   workItemType = 'Task',
   parentTitle,
-  tags,
-  onViewInAzure,
   onGoHome,
 }: SuccessScreenProps): React.ReactElement {
-  const successCount = results.filter((r) => r.success).length;
-
   const getLabels = (): { singular: string; plural: string; parent: string } => {
     switch (workItemType) {
       case 'Epic':
@@ -73,24 +65,17 @@ export function SuccessScreen({
     <div className="screen screen-center">
       <div style={styles.icon}>&#10003;</div>
       <h2 style={styles.heading}>
-        {successCount} {successCount === 1 ? singular : plural} created!
+        {count} {count === 1 ? singular : plural} created!
       </h2>
       {parentTitle && (
         <p style={styles.detail}>
           {parent}: {parentTitle}
-          {tags.length > 0 && ` | Tags: ${tags.join(', ')}`}
         </p>
-      )}
-      {!parentTitle && tags.length > 0 && (
-        <p style={styles.detail}>Tags: {tags.join(', ')}</p>
       )}
 
       <div className="screen-footer" style={styles.buttons}>
-        <Button onClick={onViewInAzure} fullWidth>
-          View in Azure DevOps
-        </Button>
-        <Button onClick={onGoHome} variant="secondary" fullWidth>
-          Go Home
+        <Button onClick={onGoHome} fullWidth>
+          Done
         </Button>
       </div>
     </div>

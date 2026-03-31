@@ -272,11 +272,9 @@ export function App(): React.ReactElement {
 
       {screen === 'success' && (
         <SuccessScreen
-          results={[]}
+          count={savedCount}
           workItemType="Task"
           parentTitle={selection?.story.title || ''}
-          tags={[]}
-          onViewInAzure={() => {}}
           onGoHome={handleGoHome}
         />
       )}
