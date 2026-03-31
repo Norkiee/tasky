@@ -167,6 +167,7 @@ async function generateTasksForFrame(
       frame: {
         id: frame.id,
         name: frame.name,
+        imageBase64: frame.imageBase64,
         textContent: frame.textContent,
         componentNames: frame.componentNames,
         nestedFrameNames: frame.nestedFrameNames,

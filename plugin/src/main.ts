@@ -93,8 +93,8 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
 
 async function exportFrameAsBase64(frame: FrameNode): Promise<string> {
   try {
-    // Export at 1x scale, max 1024px on longest side for reasonable file size
-    const maxSize = 1024;
+    // Export at reduced size for fast API transfer
+    const maxSize = 512;
     const scale = Math.min(1, maxSize / Math.max(frame.width, frame.height));
 
     const bytes = await frame.exportAsync({

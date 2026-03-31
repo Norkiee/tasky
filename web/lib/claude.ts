@@ -92,7 +92,7 @@ export async function generateTasksForFrame(
     .replace('{storyTitle}', storyTitle || 'Not specified')
     .replace('{storyDescription}', storyDescription || 'Not specified');
 
-  // Build a text description of the frame
+  // Build supplementary text context
   const frameDescription = [
     `Frame: "${frame.name}" (${frame.width || 0}x${frame.height || 0})`,
     frame.textContent?.length ? `Text content: ${frame.textContent.join(', ')}` : null,
@@ -100,13 +100,35 @@ export async function generateTasksForFrame(
     frame.nestedFrameNames?.length ? `Child frames: ${frame.nestedFrameNames.join(', ')}` : null,
   ].filter(Boolean).join('\n');
 
+  // Build message content — use image if available
+  const content: Array<
+    | { type: 'image'; source: { type: 'base64'; media_type: 'image/png'; data: string } }
+    | { type: 'text'; text: string }
+  > = [];
+
+  if (frame.imageBase64) {
+    content.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: 'image/png',
+        data: frame.imageBase64,
+      },
+    });
+  }
+
+  content.push({
+    type: 'text',
+    text: `${prompt}\n\n${frameDescription}`,
+  });
+
   const response = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 2048,
     messages: [
       {
         role: 'user',
-        content: `${prompt}\n\n${frameDescription}`,
+        content,
       },
     ],
   });
