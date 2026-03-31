@@ -1,10 +1,24 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function PluginLoginPage() {
+  return (
+    <Suspense fallback={
+      <main style={styles.main}>
+        <div style={styles.card}>
+          <p style={{ color: '#A1A1A1', textAlign: 'center' }}>Loading...</p>
+        </div>
+      </main>
+    }>
+      <PluginLoginContent />
+    </Suspense>
+  )
+}
+
+function PluginLoginContent() {
   const searchParams = useSearchParams()
   const code = searchParams.get('code')
   const supabase = createClient()
