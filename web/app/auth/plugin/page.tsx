@@ -28,31 +28,57 @@ function PluginLoginContent() {
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
   const [done, setDone] = useState(false)
+  const [checking, setChecking] = useState(true)
 
-  // Listen for auth state change after magic link click
+  // On mount, check if user is already signed in (magic link redirect case)
   useEffect(() => {
-    if (!code) return
+    if (!code) {
+      setChecking(false)
+      return
+    }
 
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        await storeTokensForPlugin(session)
+        return
+      }
+
+      // No session yet — listen for auth state change
+      setChecking(false)
+    }
+
+    const storeTokensForPlugin = async (session: { access_token: string; refresh_token: string; expires_at?: number; user?: { email?: string } | null }) => {
+      try {
+        const res = await fetch('/api/auth/plugin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at,
+            email: session.user?.email,
+          }),
+        })
+        if (res.ok) {
+          setDone(true)
+        } else {
+          setError('Failed to connect to plugin. Please try again.')
+        }
+      } catch {
+        setError('Failed to connect to plugin. Please try again.')
+      }
+      setChecking(false)
+    }
+
+    checkExistingSession()
+
+    // Also listen for future auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
-          // Store tokens for the plugin to poll
-          try {
-            await fetch('/api/auth/plugin', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                code,
-                access_token: session.access_token,
-                refresh_token: session.refresh_token,
-                expires_at: session.expires_at,
-                email: session.user?.email,
-              }),
-            })
-            setDone(true)
-          } catch {
-            setError('Failed to connect to plugin. Please try again.')
-          }
+          await storeTokensForPlugin(session)
         }
       }
     )
@@ -91,6 +117,16 @@ function PluginLoginContent() {
       <main style={styles.main}>
         <div style={styles.card}>
           <p style={styles.error}>Invalid link. Please sign in from the Figma plugin.</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (checking) {
+    return (
+      <main style={styles.main}>
+        <div style={styles.card}>
+          <p style={{ color: '#A1A1A1', textAlign: 'center' }}>Signing you in...</p>
         </div>
       </main>
     )
