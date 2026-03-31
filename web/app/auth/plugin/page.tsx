@@ -67,9 +67,13 @@ function PluginLoginContent() {
     setLoading(true)
     setError('')
 
+    const redirectUrl = `${window.location.origin}/auth/plugin?code=${code}`
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: redirectUrl,
+      },
     })
 
     setLoading(false)
