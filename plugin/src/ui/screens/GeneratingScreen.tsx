@@ -62,16 +62,6 @@ export function GeneratingScreen({
           : 'Analyzing your design'
         }
       />
-      {currentFrame && (
-        <div style={styles.currentFrame}>
-          {currentFrame.name}
-        </div>
-      )}
-      {totalCount > 1 && (
-        <p style={styles.progress}>
-          {completedCount} of {totalCount} frames complete
-        </p>
-      )}
     </div>
   );
 }
