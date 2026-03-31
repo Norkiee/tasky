@@ -193,8 +193,19 @@ export default function ProjectPage() {
     setShowComposer(false)
   }
 
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
   const copyTask = (task: Task) => {
     navigator.clipboard.writeText(task.title)
+    setCopiedId(task.id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }
+
+  const copyAllTasks = (tasks: Task[]) => {
+    const text = tasks.map(t => t.title).join('\n')
+    navigator.clipboard.writeText(text)
+    setCopiedId('all')
+    setTimeout(() => setCopiedId(null), 1500)
   }
 
   if (loading) {
@@ -360,15 +371,22 @@ export default function ProjectPage() {
                                           )}
                                           <button
                                             onClick={() => copyTask(task)}
-                                            className="text-[#666666] hover:text-[#A1A1A1] transition-colors p-1"
+                                            className="text-[#666666] hover:text-[#A1A1A1] transition-colors p-1 flex items-center gap-1"
                                           >
-                                            <CopyIcon className="w-4 h-4" />
+                                            {copiedId === task.id ? (
+                                              <span className="text-[10px] text-[#8B5CF6]">Copied</span>
+                                            ) : (
+                                              <CopyIcon className="w-4 h-4" />
+                                            )}
                                           </button>
                                         </div>
                                       ))}
                                       <div className="pt-3 mt-2 border-t border-[rgba(255,255,255,0.06)] text-right">
-                                        <button className="text-xs text-[#A1A1A1] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-2 hover:border-[rgba(255,255,255,0.15)] transition-colors">
-                                          Copy all
+                                        <button
+                                          onClick={() => copyAllTasks(tasks[story.id] || [])}
+                                          className="text-xs text-[#A1A1A1] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-2 hover:border-[rgba(255,255,255,0.15)] transition-colors"
+                                        >
+                                          {copiedId === 'all' ? 'Copied!' : 'Copy all'}
                                         </button>
                                       </div>
                                     </div>
