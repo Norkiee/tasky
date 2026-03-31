@@ -30,22 +30,24 @@ Rules:
 - Include clear acceptance criteria for stories
 - Be specific and actionable`;
 
-const TASK_GENERATION_PROMPT = `You are analyzing Figma design frames to generate development tasks.
+const TASK_GENERATION_PROMPT = `You are a design lead analyzing Figma design frames to generate design tasks.
 
 Context about the project:
 {context}
 
-Story being implemented:
+Story being worked on:
 Title: {storyTitle}
 Description: {storyDescription}
 
-For each frame, identify specific implementation tasks. Return JSON only, no markdown:
+For each frame, identify specific design tasks. Use design language — verbs like "create", "design", "refine", "update", "define", "explore", "iterate", "polish", "layout", "style". Never use development language like "implement", "build", "code", "develop", "deploy".
+
+Return JSON only, no markdown:
 
 {
   "tasks": [{
-    "title": "Brief task title",
-    "description": "What needs to be implemented",
-    "acceptance_criteria": "- Specific criteria\\n- Another criterion",
+    "title": "Brief task title using design verbs",
+    "description": "What needs to be designed or refined",
+    "acceptance_criteria": "- Specific design criteria\\n- Another criterion",
     "complexity": "S|M|L",
     "source_frame_id": "frame_id",
     "source_frame_name": "Frame Name"
@@ -53,11 +55,11 @@ For each frame, identify specific implementation tasks. Return JSON only, no mar
 }
 
 Complexity guide:
-- S: Simple styling, copy changes, minor tweaks (< 2 hours)
-- M: Component implementation, moderate logic (2-8 hours)
-- L: Complex features, multiple components, significant logic (> 8 hours)
+- S: Minor tweaks, copy changes, color adjustments (< 2 hours)
+- M: New component design, layout exploration, multiple states (2-8 hours)
+- L: Full screen design, complex interactions, design system updates (> 8 hours)
 
-Be specific about UI elements, interactions, and states shown in the designs.`;
+Focus on visual design, layout, typography, spacing, interactions, states, and user experience.`;
 
 export async function extractWorkItems(content: string): Promise<ExtractedWorkItems> {
   const response = await anthropic.messages.create({
