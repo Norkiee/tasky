@@ -79,8 +79,8 @@ function stripMarkdownFences(text: string): string {
   return text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 }
 
-export async function generateTasks(
-  frames: FrameData[],
+export async function generateTasksForFrame(
+  frame: FrameData,
   context?: string,
   storyTitle?: string,
   storyDescription?: string
@@ -90,14 +90,23 @@ export async function generateTasks(
     .replace('{storyTitle}', storyTitle || 'Not specified')
     .replace('{storyDescription}', storyDescription || 'Not specified');
 
-  const imageContent = frames.map((frame) => ({
-    type: 'image' as const,
-    source: {
-      type: 'base64' as const,
-      media_type: 'image/png' as const,
-      data: frame.imageBase64,
-    },
-  }));
+  const content: Array<{ type: 'image'; source: { type: 'base64'; media_type: 'image/png'; data: string } } | { type: 'text'; text: string }> = [];
+
+  if (frame.imageBase64) {
+    content.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: 'image/png',
+        data: frame.imageBase64,
+      },
+    });
+  }
+
+  content.push({
+    type: 'text',
+    text: `${prompt}\n\nFrame: ${frame.id} — "${frame.name}"`,
+  });
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -105,18 +114,18 @@ export async function generateTasks(
     messages: [
       {
         role: 'user',
-        content: [
-          ...imageContent,
-          {
-            type: 'text',
-            text: `${prompt}\n\nFrame IDs and names:\n${frames.map((f) => `- ${f.id}: ${f.name}`).join('\n')}`,
-          },
-        ],
+        content,
       },
     ],
   });
 
   const text = response.content[0].type === 'text' ? response.content[0].text : '';
   const parsed = JSON.parse(stripMarkdownFences(text));
-  return parsed.tasks;
+
+  // Ensure source_frame_id is set on each task
+  return (parsed.tasks || []).map((task: TaskInput) => ({
+    ...task,
+    source_frame_id: frame.id,
+    source_frame_name: frame.name,
+  }));
 }

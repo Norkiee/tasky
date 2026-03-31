@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
-import { generateTasks } from '@/lib/claude';
-import { GenerateTasksRequest } from '@/lib/types';
+import { generateTasksForFrame } from '@/lib/claude';
+import { GenerateTasksRequest, TaskInput } from '@/lib/types';
+
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser(request);
@@ -17,9 +19,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const tasks = await generateTasks(frames, context, storyTitle, storyDescription);
-    return NextResponse.json({ tasks });
+    const allTasks: TaskInput[] = [];
+
+    // Process frames one at a time to avoid timeout/size limits
+    for (const frame of frames) {
+      const tasks = await generateTasksForFrame(frame, context, storyTitle, storyDescription);
+      allTasks.push(...tasks);
+    }
+
+    return NextResponse.json({ tasks: allTasks });
   } catch (error) {
+    console.error('Generate error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Task generation failed' },
       { status: 500 }
