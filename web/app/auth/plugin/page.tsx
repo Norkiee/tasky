@@ -135,7 +135,7 @@ function PluginLoginContent() {
   if (done) {
     return (
       <main style={styles.main}>
-        <div style={styles.card}>
+        <div style={{ ...styles.card, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', textAlign: 'center' as const }}>
           <div style={styles.successIcon}>&#10003;</div>
           <h2 style={styles.heading}>Signed in!</h2>
           <p style={styles.subtext}>You can close this tab and return to the Figma plugin.</p>
