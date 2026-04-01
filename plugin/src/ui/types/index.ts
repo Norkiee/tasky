@@ -173,6 +173,7 @@ export interface PluginStorage {
   // Auth
   accessToken?: string;
   refreshToken?: string;
+  expiresAt?: number;
   email?: string;
   // Legacy Azure fields (can be removed after migration)
   azureProjectId?: string;

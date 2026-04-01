@@ -58,6 +58,13 @@ export async function pollPluginAuth(
   return request(`/api/auth/plugin/poll?code=${encodeURIComponent(code)}`);
 }
 
+export async function refreshPluginSession(refreshToken: string): Promise<Session> {
+  return request('/api/auth/plugin/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+}
+
 export interface Session {
   access_token: string;
   refresh_token: string;
