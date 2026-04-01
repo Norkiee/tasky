@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '../components/Button';
 
 interface HomeScreenProps {
@@ -78,53 +78,115 @@ export function HomeScreen({
         </div>
       )}
 
-      {/* Account strip */}
+      {/* Account pill */}
       {email && onSignOut && (
-        <div style={{
-          width: '100%',
-          marginTop: '12px',
+        <AccountPill email={email} onSignOut={onSignOut} />
+      )}
+    </div>
+  );
+}
+
+function AccountPill({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Truncate email for display
+  const displayEmail = email.length > 24 ? email.slice(0, 22) + '…' : email;
+
+  return (
+    <div ref={ref} style={{ position: 'relative', marginTop: '12px' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 12px',
+          gap: '6px',
+          padding: '5px 10px 5px 6px',
           background: '#0D0D0D',
-          borderRadius: '10px',
-          border: '1px solid rgba(255,255,255,0.07)',
+          border: `1px solid ${open ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
+          borderRadius: '999px',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        {/* Avatar dot */}
+        <div style={{
+          width: '20px',
+          height: '20px',
+          borderRadius: '50%',
+          background: 'rgba(139,92,246,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-            <div style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'rgba(139,92,246,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="5" r="3" stroke="#8B5CF6" strokeWidth="1.5"/>
-                <path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: '11px', color: '#A1A1A1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {email}
-            </span>
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="5.5" r="2.5" stroke="#8B5CF6" strokeWidth="1.5" />
+            <path d="M2.5 14c0-2.761 2.462-4.5 5.5-4.5s5.5 1.739 5.5 4.5" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </div>
+        <span style={{ fontSize: '11px', color: '#A1A1A1', whiteSpace: 'nowrap' }}>
+          {displayEmail}
+        </span>
+        {/* Chevron */}
+        <svg
+          width="10" height="10" viewBox="0 0 10 10" fill="none"
+          style={{ transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none', marginLeft: '2px' }}
+        >
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="#555" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(100% + 6px)',
+          left: 0,
+          background: '#1A1A1A',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '10px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+          padding: '4px',
+          minWidth: '160px',
+          zIndex: 100,
+        }}>
+          {/* Email header */}
+          <div style={{ padding: '6px 10px 8px', fontSize: '11px', color: '#555', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {email}
           </div>
           <button
-            onClick={onSignOut}
+            onClick={() => { setOpen(false); onSignOut(); }}
             style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '7px 10px',
               background: 'none',
               border: 'none',
-              padding: '2px 6px',
-              fontSize: '11px',
-              color: '#666666',
+              borderRadius: '7px',
+              fontSize: '13px',
+              color: '#EF4444',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              flexShrink: 0,
-              marginLeft: '8px',
+              textAlign: 'left',
             }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <path d="M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             Disconnect
           </button>
         </div>
