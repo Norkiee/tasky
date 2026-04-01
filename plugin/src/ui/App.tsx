@@ -206,7 +206,9 @@ export function App(): React.ReactElement {
         <HomeScreen
           frameCount={frameCount}
           sectionCount={sectionCount}
+          email={auth.email}
           onContinue={handleContinueFromHome}
+          onSignOut={auth.isAuthenticated ? auth.logout : undefined}
         />
       )}
 
