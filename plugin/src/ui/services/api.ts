@@ -73,7 +73,20 @@ export interface Project {
 }
 
 export async function getProjects(token: string): Promise<Project[]> {
-  return request('/api/projects', {
+  return request('/api/projects', { headers: authHeaders(token) });
+}
+
+export async function updateProject(token: string, id: string, patch: { name: string }): Promise<Project> {
+  return request(`/api/projects?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteProject(token: string, id: string): Promise<void> {
+  return request(`/api/projects?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
     headers: authHeaders(token),
   });
 }
@@ -106,17 +119,69 @@ export async function getFeatures(token: string, epicId: string): Promise<Featur
   });
 }
 
+export async function updateEpic(token: string, id: string, patch: { title: string }): Promise<Epic> {
+  return request(`/api/epics?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteEpic(token: string, id: string): Promise<void> {
+  return request(`/api/epics?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+}
+
+export async function updateFeature(token: string, id: string, patch: { title: string }): Promise<Feature> {
+  return request(`/api/features?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteFeature(token: string, id: string): Promise<void> {
+  return request(`/api/features?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+}
+
 // Stories
 export interface Story {
   id: string;
-  feature_id: string;
+  feature_id: string | null;
+  epic_id: string | null;
   title: string;
   description: string | null;
   acceptance_criteria: string | null;
 }
 
-export async function getStories(token: string, featureId: string): Promise<Story[]> {
-  return request(`/api/stories?featureId=${encodeURIComponent(featureId)}`, {
+export async function updateStory(token: string, id: string, patch: { title: string }): Promise<Story> {
+  return request(`/api/stories?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteStory(token: string, id: string): Promise<void> {
+  return request(`/api/stories?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+}
+
+export async function getStories(
+  token: string,
+  opts: { featureId: string; epicId?: never } | { epicId: string; featureId?: never }
+): Promise<Story[]> {
+  const param = 'featureId' in opts && opts.featureId
+    ? `featureId=${encodeURIComponent(opts.featureId)}`
+    : `epicId=${encodeURIComponent((opts as { epicId: string }).epicId)}`;
+  return request(`/api/stories?${param}`, {
     headers: authHeaders(token),
   });
 }
