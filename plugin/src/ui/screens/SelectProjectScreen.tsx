@@ -294,12 +294,12 @@ export function SelectProjectScreen({
           />
         )}
 
-        {epicId && (
+        {epicId && !loading && features.length > 0 && (
           <Select
             label="Feature (optional)"
             value={featureId}
             onChange={setFeatureId}
-            placeholder={loading ? 'Loading...' : features.length === 0 ? 'No features' : 'Select a feature'}
+            placeholder="Select a feature"
             options={[
               { value: '', label: 'No feature — use epic directly', isStatic: true },
               ...features.map(f => ({ value: f.id, label: f.title })),
