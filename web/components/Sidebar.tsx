@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { PlusIcon, FolderIcon, LogoutIcon } from './icons'
+import { PlusIcon, LogoutIcon } from './icons'
 import { createClient } from '@/lib/supabase/client'
 
 interface NavIconProps {
@@ -50,12 +50,6 @@ export function Sidebar({ activePage = 'dashboard', onCreateProject }: SidebarPr
       >
         <PlusIcon className="w-5 h-5" />
       </button>
-
-      {/* Navigation Icons */}
-      <NavIcon
-        icon={FolderIcon}
-        active={activePage === 'project'}
-      />
 
       {/* Spacer */}
       <div className="flex-1" />
