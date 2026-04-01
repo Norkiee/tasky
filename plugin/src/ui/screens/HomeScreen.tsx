@@ -103,7 +103,7 @@ function AccountPill({ email, onSignOut }: { email: string; onSignOut: () => voi
   const displayEmail = email.length > 24 ? email.slice(0, 22) + '…' : email;
 
   return (
-    <div ref={ref} style={{ position: 'relative', marginTop: '12px' }}>
+    <div ref={ref} style={{ position: 'relative', marginTop: '12px', display: 'inline-block' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -157,7 +157,7 @@ function AccountPill({ email, onSignOut }: { email: string; onSignOut: () => voi
           borderRadius: '10px',
           boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
           padding: '4px',
-          minWidth: '160px',
+          width: '100%',
           zIndex: 100,
         }}>
           {/* Email header */}
