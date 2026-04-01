@@ -10,14 +10,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { frame, context, storyTitle, storyDescription } = body;
+  const { frame, context, storyTitle, storyDescription, sectionContext } = body;
 
   if (!frame || !frame.id || !frame.name) {
     return NextResponse.json({ error: 'frame object with id and name is required' }, { status: 400 });
   }
 
   try {
-    const tasks: TaskInput[] = await generateTasksForFrame(frame, context, storyTitle, storyDescription);
+    const tasks: TaskInput[] = await generateTasksForFrame(frame, context, storyTitle, storyDescription, sectionContext);
     return NextResponse.json({ tasks });
   } catch (error) {
     console.error('Generate error:', error);

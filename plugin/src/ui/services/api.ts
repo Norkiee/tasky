@@ -240,13 +240,21 @@ export async function saveTasks(
   });
 }
 
+interface SectionContext {
+  sectionName: string;
+  frameNames: string[];
+  frameIndex: number;
+  totalFrames: number;
+}
+
 // Generate tasks for a single frame
 async function generateTasksForFrame(
   token: string,
   frame: FrameData,
   context?: string,
   storyTitle?: string,
-  storyDescription?: string
+  storyDescription?: string,
+  sectionContext?: SectionContext
 ): Promise<TaskInput[]> {
   const result = await request<{ tasks: TaskInput[] }>('/api/generate', {
     method: 'POST',
@@ -265,6 +273,7 @@ async function generateTasksForFrame(
       context,
       storyTitle,
       storyDescription,
+      sectionContext,
     }),
   });
   return result.tasks;
@@ -281,8 +290,30 @@ export async function generateWorkItems(
 ): Promise<{ frameWorkItems: FrameWorkItems[] }> {
   const frameWorkItemsList: FrameWorkItems[] = [];
 
+  // Group frames by section to build flow context
+  const sectionMap = new Map<string, FrameData[]>();
   for (const frame of frames) {
-    const tasks = await generateTasksForFrame(token, frame, context, storyTitle, storyDescription);
+    if (frame.sectionName) {
+      const existing = sectionMap.get(frame.sectionName) || [];
+      sectionMap.set(frame.sectionName, [...existing, frame]);
+    }
+  }
+
+  for (const frame of frames) {
+    // Build section context if this frame belongs to a named section
+    let sectionContext: SectionContext | undefined;
+    if (frame.sectionName) {
+      const sectionFrames = sectionMap.get(frame.sectionName) || [];
+      const frameIndex = sectionFrames.findIndex(f => f.id === frame.id);
+      sectionContext = {
+        sectionName: frame.sectionName,
+        frameNames: sectionFrames.map(f => f.name),
+        frameIndex,
+        totalFrames: sectionFrames.length,
+      };
+    }
+
+    const tasks = await generateTasksForFrame(token, frame, context, storyTitle, storyDescription, sectionContext);
 
     frameWorkItemsList.push({
       frameId: frame.id,

@@ -30,36 +30,39 @@ Rules:
 - Include clear acceptance criteria for stories
 - Be specific and actionable`;
 
-const TASK_GENERATION_PROMPT = `You are a design lead analyzing Figma design frames to generate design tasks.
+const TASK_GENERATION_PROMPT = `You are a design lead reviewing a Figma frame to generate focused design tasks.
 
-Context about the project:
-{context}
+{contextBlock}
 
-Story being worked on:
+{flowBlock}
+
+Story:
 Title: {storyTitle}
 Description: {storyDescription}
 
-For each frame, identify specific design tasks. Use design language — verbs like "create", "design", "refine", "update", "define", "explore", "iterate", "polish", "layout", "style". Never use development language like "implement", "build", "code", "develop", "deploy".
+Instructions:
+- Use design language only — verbs like "design", "create", "refine", "update", "define", "explore", "iterate", "polish", "layout", "style". Never use "implement", "build", "code", "develop", "deploy".
+- Generate only tasks that are genuinely necessary based on what you see and what the context tells you.
+- Be specific. Reference actual elements visible in the frame (e.g. "Refine the empty state illustration in the activity feed", not "Design the screen").
+- Aim for 2–5 tasks per frame. Do not pad with generic tasks.
 
 Return JSON only, no markdown:
 
 {
   "tasks": [{
     "title": "Brief task title using design verbs",
-    "description": "What needs to be designed or refined",
-    "acceptance_criteria": "- Specific design criteria\\n- Another criterion",
+    "description": "What specifically needs to be designed or refined, and why",
+    "acceptance_criteria": "- Measurable design criterion\\n- Another criterion",
     "complexity": "S|M|L",
     "source_frame_id": "frame_id",
     "source_frame_name": "Frame Name"
   }]
 }
 
-Complexity guide:
-- S: Minor tweaks, copy changes, color adjustments (< 2 hours)
-- M: New component design, layout exploration, multiple states (2-8 hours)
-- L: Full screen design, complex interactions, design system updates (> 8 hours)
-
-Focus on visual design, layout, typography, spacing, interactions, states, and user experience.`;
+Complexity:
+S = Minor tweak, copy or colour change (< 2 hrs)
+M = New component, layout exploration, multiple states (2–8 hrs)
+L = Full screen design, complex interaction, design system change (> 8 hrs)`;
 
 export async function extractWorkItems(content: string): Promise<ExtractedWorkItems> {
   const response = await anthropic.messages.create({
@@ -81,14 +84,40 @@ function stripMarkdownFences(text: string): string {
   return text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 }
 
+interface SectionContext {
+  sectionName: string;
+  frameNames: string[];
+  frameIndex: number;
+  totalFrames: number;
+}
+
 export async function generateTasksForFrame(
   frame: FrameData,
   context?: string,
   storyTitle?: string,
-  storyDescription?: string
+  storyDescription?: string,
+  sectionContext?: SectionContext
 ): Promise<TaskInput[]> {
+  // Build context block — given priority if provided
+  const contextBlock = context
+    ? `⚡ Designer context (treat this as the primary directive):
+"${context}"
+
+If this context describes a specific change, update, or addition to an existing design, generate tasks ONLY for that specific change — do not generate tasks for the entire screen. The context overrides what you see in the frame if they differ in scope.`
+    : `No designer context provided — generate tasks based on what you observe in the frame.`;
+
+  // Build flow block — only when frame belongs to a named section
+  const flowBlock = sectionContext
+    ? `User flow context:
+This frame is part of the "${sectionContext.sectionName}" flow (screen ${sectionContext.frameIndex + 1} of ${sectionContext.totalFrames}).
+Flow sequence: ${sectionContext.frameNames.map((n, i) => i === sectionContext.frameIndex ? `[${n}]` : n).join(' → ')}
+
+Read this as a connected experience. Consider how this screen fits into the journey — what the user is coming from and going to — and let that inform the tasks. The bracketed frame name is the one you are analysing.`
+    : '';
+
   const prompt = TASK_GENERATION_PROMPT
-    .replace('{context}', context || 'No additional context provided')
+    .replace('{contextBlock}', contextBlock)
+    .replace('{flowBlock}', flowBlock)
     .replace('{storyTitle}', storyTitle || 'Not specified')
     .replace('{storyDescription}', storyDescription || 'Not specified');
 
