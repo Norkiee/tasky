@@ -105,6 +105,14 @@ export async function getEpics(token: string, projectId: string): Promise<Epic[]
   });
 }
 
+export async function createEpic(token: string, projectId: string, title: string): Promise<Epic> {
+  return request('/api/epics', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ project_id: projectId, title }),
+  });
+}
+
 // Features
 export interface Feature {
   id: string;
@@ -116,6 +124,14 @@ export interface Feature {
 export async function getFeatures(token: string, epicId: string): Promise<Feature[]> {
   return request(`/api/features?epicId=${encodeURIComponent(epicId)}`, {
     headers: authHeaders(token),
+  });
+}
+
+export async function createFeature(token: string, epicId: string, title: string): Promise<Feature> {
+  return request('/api/features', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ epic_id: epicId, title }),
   });
 }
 
