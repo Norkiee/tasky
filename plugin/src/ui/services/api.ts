@@ -1,7 +1,7 @@
 import { FrameData, FrameWorkItems } from '../types';
 
 declare const VITE_API_URL: string | undefined;
-const API_URL = 'https://taskscribe.com';
+const API_URL = 'https://taskscribe.xyz';
 
 export class AuthError extends Error {
   constructor(message: string = 'Session expired') {
