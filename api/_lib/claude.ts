@@ -123,37 +123,26 @@ Output JSON:
 
 const TASK_SYSTEM_PROMPT = `You help designers create Azure DevOps Tasks from their Figma designs.
 
-You will receive:
-- Frame name and section (what the designer named this screen/component)
-- Text content (actual labels, headings, button text from the design)
-- Components used (specific UI components like "PrimaryButton", "TextInput", "Avatar")
-- Nested frames (child sections like "Header", "Form", "Footer")
-- Parent context: Epic, Feature, and/or User Story (if provided)
-- Optional context from the designer
+You will receive frame data (name, text content, components, nested sections) and optional context from the designer.
 
-Your job: Create 1-5 actionable design tasks based on what's actually in the frame.
+Your job: Generate 1-5 task titles that match how this team writes tasks.
 
-CRITICAL RULES:
-- ONLY create tasks for elements that exist in the frame data
-- Use the actual text content and component names in your task titles
-- If the frame has "Email", "Password", "Sign In" text, tasks should reference those specific elements
-- If components include "TextInput", "Button", create tasks about those specific components
-- Do NOT invent generic tasks - every task must trace back to something in the frame
+STYLE — match these examples exactly:
+- "Design an experience for users who qualify for an overdraft but have a missed or defaulted payment."
+- "Create user login scenario for already existing business owners"
+- "design a page to show activated request for report button"
+- "Update branches to account on the transfer advice"
 
-Task ideas based on frame content:
-- If frame has form fields → "Design validation states for [field names from text content]"
-- If frame has buttons → "Create hover and pressed states for [button text]"
-- If frame has nested sections → "Finalize layout for [nested frame names]"
-
-Write naturally, like a designer adding tasks to their sprint board.
+RULES:
+- Short, action-oriented title only — no description
+- Start with a verb (Design, Create, Update, Add, etc.)
+- Reference what's actually in the frame — don't invent
+- Natural language, no jargon
 
 Output JSON:
 {
   "tasks": [
-    {
-      "title": "string - specific task referencing actual frame elements",
-      "description": "string - what to do and which elements are involved"
-    }
+    { "title": "string" }
   ]
 }`;
 
@@ -269,7 +258,7 @@ Dimensions: ${frame.width}x${frame.height}
 
 ${context ? `Additional context: ${context}` : ''}
 
-Generate design tasks for this frame that a designer can complete in Figma.`;
+Generate tasks for this frame.`;
 }
 
 function buildUserStoryPrompt(
@@ -392,10 +381,10 @@ function parseTaskResponse(text: string): ParsedTask[] {
     if (typeof t.title !== 'string' || !t.title) {
       throw new Error(`Task ${index}: Missing or invalid title`);
     }
-    if (typeof t.description !== 'string' || !t.description) {
-      throw new Error(`Task ${index}: Missing or invalid description`);
-    }
-    return { title: t.title, description: t.description };
+    return {
+      title: t.title,
+      description: typeof t.description === 'string' ? t.description : '',
+    };
   });
 }
 

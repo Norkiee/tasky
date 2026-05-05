@@ -180,7 +180,7 @@ export interface AzureWorkItemDetails {
 export interface TaskToCreate {
   taskId: string;
   title: string;
-  description: string;
+  description?: string;
   parentStoryId: number;
   tags: string[];
 }

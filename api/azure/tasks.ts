@@ -43,7 +43,7 @@ export default async function handler(
           },
           {
             title: task.title,
-            description: task.description,
+            description: task.description || '',
             parentStoryId: task.parentStoryId,
             tags: task.tags,
             state: 'New',
